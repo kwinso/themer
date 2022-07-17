@@ -4,8 +4,7 @@ themes:
     foreground: "#ffffff"
   light:
     foreground: "#000000"
-    foreground: "#ffffff"
-
+    background: "#ffffff"
 
 files:
   custom_format: 
@@ -14,16 +13,18 @@ files:
     comment: "#"
     # Do whatever you want with your keys and values!
     format: "set my_<key> as <value>"
+
   quot_comment: 
     path: "./test-configs/qouts"
     comment: "\""
+
   custom: 
     path: "./test-configs/custom"
     # NOTE: <COLORS> directive puts every colors just as normal. It can be used when you need
     # additional data around your colors
-    custom: 
-      - | "# So this is my colors for theme <NAME>:
+    # NOTE: Even comments will be added to your config
+    custom: |
+        # So this is my colors for theme <NAME>:
         <COLORS>
         # Also dont forget that my background color is <BACKGROUND>
-        "
   # TODO: Alias, Ignoring
