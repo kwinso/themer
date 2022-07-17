@@ -7,7 +7,7 @@ use std::{fs, process::exit};
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Name of the person to greet
+    /// Path to the config file
     #[clap(short, long, default_value = "~/.config/themer.yml")]
     config: String,
 }
@@ -36,5 +36,5 @@ fn main() {
     config
         .themes
         .into_iter()
-        .for_each(|x| println!("{}: {:#?}", x.0, x.1));
+        .for_each(|x| println!("\t- {}", x.0));
 }
