@@ -1,6 +1,6 @@
 [package]
 name = "themer"
-about = "Change your desktop theme with just one command"
+description = "Update theme colors in your config files with single command"
 version = "0.1.0"
 edition = "2021"
 
