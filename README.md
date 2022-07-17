@@ -10,4 +10,5 @@ A tool that allows you to update your desktop theme with just one command.
 - [ ] Custom file format
   - [ ] `<COLORS>` directive: puts default key-value assignment
   - [ ] `<COLOR (any key from color set)>` to use defined values in custom format
+  - [ ] `<NAME>` to represent current theme name. Usefull in scenarios like `coloscheme` name for Nvim.
 - [ ] Aliasing colors for some custom names 
