@@ -37,7 +37,7 @@ pub fn update_configs(theme_name: String, config: Config) {
     }
 }
 
-fn get_block_re(comment: &String) -> Regex {
+pub fn get_block_re(comment: &String) -> Regex {
     RegexBuilder::new(&format!("{0} THEMER\n.*{0} THEMER_END", comment))
         .dot_matches_new_line(true)
         .build()

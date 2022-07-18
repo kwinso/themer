@@ -50,6 +50,34 @@ fn setup_logger() {
     TermLogger::init(level, log_conf, TerminalMode::Mixed, ColorChoice::Auto).unwrap();
 }
 
+fn list_files(config: Config, check: bool) {
+    println!("{}", "Listed configuration files:".purple());
+    config.files.into_iter().for_each(|x| {
+        if check {
+            let valid: Result<(), &'static str> = match fs::read_to_string(&x.1.path) {
+                Err(_) => Err("Failed to read file."),
+                Ok(v) => {
+                    let re = engine::get_block_re(&x.1.comment);
+                    match re.is_match(&v) {
+                        true => Ok(()),
+                        false => Err("No THEMER block found."),
+                    }
+                }
+            };
+            let mut sign = "+".green();
+            let mut err = String::new();
+            if let Err(e) = valid {
+                sign = "-".red();
+                err = format!("[{}]", e.to_string().red());
+            }
+
+            println!(" {sign} {} ({}), {err}", x.0, x.1.path);
+            return;
+        }
+        println!("  - {} ({})", x.0, x.1.path);
+    });
+}
+
 // TODO: Add & setup logger for pretty messages
 // TODO: Setup subcommands: themes, files (to list respectively), set (to set theme)
 fn main() {
@@ -85,11 +113,7 @@ fn main() {
         // TODO: Maybe check if configuration file is valid by checking
         // if THEMER & THEMER_END comments exist
         Commands::Files { check } => {
-            println!("{}", "Listed configuration files:".purple());
-            config
-                .files
-                .into_iter()
-                .for_each(|x| println!("  - {} ({})", x.0, x.1.path));
+            list_files(config, check);
         }
         Commands::Set { theme } => {
             engine::update_configs(theme, config);
