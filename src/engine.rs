@@ -36,5 +36,36 @@ fn vars_to_themer_block(vars: &ThemeVars, config: &FileConfig) -> String {
 
     // Block is surrounded with newlines so no need to devide comment lines and the actual block
     // in this format! call
-    format!("{0} THEMER{block}{0} THEMER_END", config.comment)
+    format!("{0} THEMER{block}{0} THEMER_END\n", config.comment)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::vars_to_themer_block;
+    use crate::config::FileConfig;
+    use std::collections::HashMap;
+
+    #[test]
+    fn valid_themer_block() {
+        let vars = HashMap::from([
+            ("background".to_owned(), "#000000".to_owned()),
+            ("foreground".to_owned(), "#ffffff".to_owned()),
+        ]);
+        let conf = FileConfig {
+            path: String::new(),
+            comment: "#".to_owned(),
+            format: "set my_<key> as <value>".to_owned(),
+            custom: None,
+        };
+
+        let res = vars_to_themer_block(&vars, &conf);
+        assert_eq!(
+            res,
+            r#"# THEMER
+set my_background as #000000
+set my_foreground as #ffffff
+# THEMER_END
+"#
+        )
+    }
 }
