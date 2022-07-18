@@ -68,14 +68,14 @@ fn list_files(config: Config, check: bool) {
                     }
                 }
             };
-            let mut sign = "+".green();
+            let mut status = "ok".green();
             let mut err = String::new();
             if let Err(e) = valid {
-                sign = "-".red();
+                status = "err".red();
                 err = format!("[{}]", e.to_string().red());
             }
 
-            println!(" {sign} {} ({}) {err}", x.0, x.1.path);
+            println!("  {status} {} ({}) {err}", x.0, x.1.path);
             return;
         }
         println!("  - {} ({})", x.0, x.1.path);
