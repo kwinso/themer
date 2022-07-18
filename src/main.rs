@@ -12,7 +12,12 @@ use std::{fs, process::exit};
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Path to the config file
-    #[clap(global = true, short, long, default_value = "~/.config/themer.yml")]
+    #[clap(
+        global = true,
+        short,
+        long,
+        default_value = "~/.config/themer/config.yml"
+    )]
     config: String,
 
     #[clap(subcommand)]
