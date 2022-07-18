@@ -46,7 +46,7 @@ fn setup_logger() {
     #[cfg(debug_assertions)]
     let level = LevelFilter::Debug;
     #[cfg(not(debug_assertions))]
-    let level = LevelFilter::Error;
+    let level = LevelFilter::Info;
 
     let log_conf = ConfigBuilder::new()
         .set_time_level(LevelFilter::Off)
