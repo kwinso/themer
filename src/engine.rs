@@ -97,7 +97,7 @@ fn wrap_with_themer_block(contents: String, comment: &String) -> String {
 fn format_vars(vars: &ThemeVars, config: &FileConfig) -> String {
     let mut block = String::new();
 
-    for (key, val) in vars {
+    for (key, val) in vars.into_iter().filter(|x| !config.ignore.contains(x.0)) {
         block.push_str(
             &config
                 .format
@@ -124,6 +124,7 @@ mod tests {
             ("foreground".to_owned(), "#ffffff".to_owned()),
         ]);
         let conf = FileConfig {
+            ignore: vec![],
             path: String::new(),
             comment: "#".to_owned(),
             format: "set my_<key> as <value>".to_owned(),

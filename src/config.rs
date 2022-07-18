@@ -4,6 +4,8 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileConfig {
     pub path: String,
+    #[serde(default)]
+    pub ignore: Vec<String>,
     #[serde(default = "default_comment")]
     pub comment: String,
     #[serde(default = "default_format")]
