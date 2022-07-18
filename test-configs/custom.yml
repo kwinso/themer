@@ -1,0 +1,15 @@
+themes:
+  dark:
+    background: "#000000"
+    foreground: "#ffffff"
+
+files:
+  custom: 
+    path: "/tmp/themer-tests/custom"
+    comment: "#"
+    format: "set my_<key> as \"<value>\""
+    custom: |
+      # This is just a comment
+      # This is colors for my theme <name>:
+      <colors>
+      set foreground as "<foreground>"

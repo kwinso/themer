@@ -31,33 +31,7 @@ pub fn update_configs(theme_name: String, config: Config) {
             exit(1);
         }
 
-        let mut new_block;
-
-        if let Some(mut custom) = conf.custom.clone() {
-            for var in get_custom_block_vars(&custom) {
-                match var.as_str() {
-                    "<colors>" => custom = custom.replace("<colors>", &format_vars(&theme, &conf)),
-                    "<name>" => custom = custom.replace("<name>", &theme_name),
-                    var => {
-                        let plain_var = var.replace("<", "").replace(">", "");
-
-                        if let Some(v) = theme.get(&plain_var) {
-                            custom = custom.replace(var, v);
-                        } else {
-                            log::warn!(
-                                "Custom block for file `{}`: variable {var} cannot be found.",
-                                conf.path
-                            );
-                        }
-                    }
-                };
-            }
-
-            new_block = custom;
-        } else {
-            new_block = format_vars(&theme, &conf);
-        }
-
+        let mut new_block = get_updated_block(&theme_name, theme, &conf);
         new_block = wrap_with_themer_block(new_block, &&conf.comment);
 
         contents = themer_block_re
@@ -66,6 +40,32 @@ pub fn update_configs(theme_name: String, config: Config) {
 
         fs::write(&conf.path, contents.as_bytes()).unwrap();
     }
+}
+
+fn get_updated_block(theme_name: &String, theme: &ThemeVars, conf: &FileConfig) -> String {
+    if let Some(mut custom) = conf.custom.clone() {
+        for var in get_custom_block_vars(&custom) {
+            match var.as_str() {
+                "<colors>" => custom = custom.replace("<colors>", &format_vars(&theme, &conf)),
+                "<name>" => custom = custom.replace("<name>", &theme_name),
+                var => {
+                    let plain_var = var.replace("<", "").replace(">", "");
+
+                    if let Some(v) = theme.get(&plain_var) {
+                        custom = custom.replace(var, v);
+                    } else {
+                        log::warn!(
+                            "Custom block for file `{}`: variable {var} cannot be found.",
+                            conf.path
+                        );
+                    }
+                }
+            };
+        }
+
+        return custom.trim_end().to_owned();
+    }
+    format_vars(&theme, &conf)
 }
 
 /// Finds unique variables in contents block
@@ -111,34 +111,59 @@ fn format_vars(vars: &ThemeVars, config: &FileConfig) -> String {
     block.trim_end().to_owned()
 }
 
+// TODO: Add test to check writing to files
 #[cfg(test)]
 mod tests {
-    use super::format_vars;
-    use crate::config::FileConfig;
-    use std::collections::HashMap;
+    use super::{format_vars, get_updated_block, wrap_with_themer_block};
+    use crate::config::Config;
+    use std::fs;
+
+    fn load_config(name: &'static str) -> Config {
+        serde_yaml::from_str(&fs::read_to_string(format!("./test-configs/{name}.yml")).unwrap())
+            .unwrap()
+    }
 
     #[test]
     fn valid_themer_block() {
-        let vars = HashMap::from([
-            ("background".to_owned(), "#000000".to_owned()),
-            ("foreground".to_owned(), "#ffffff".to_owned()),
-        ]);
-        let conf = FileConfig {
-            ignore: vec![],
-            path: String::new(),
-            comment: "#".to_owned(),
-            format: "set my_<key> as <value>".to_owned(),
-            custom: None,
-        };
+        let conf = load_config("basic");
 
-        let res = format_vars(&vars, &conf);
+        let res = format_vars(
+            &conf.themes.get("dark").unwrap(),
+            &conf.files.get("basic").unwrap(),
+        );
         assert_eq!(
             res,
-            r#"# THEMER
-set my_background as #000000
-set my_foreground as #ffffff
-# THEMER_END
-"#
+            "set my_background as \"#000000\"\nset my_foreground as \"#ffffff\""
         )
+    }
+
+    #[test]
+    fn valid_custom_block() {
+        let conf = load_config("custom");
+        let theme = conf.themes.get("dark").unwrap();
+        let file = conf.files.get("custom").unwrap();
+
+        let res = get_updated_block(&"dark".to_owned(), &theme, &file);
+
+        let vars = format_vars(&theme, &file);
+
+        let expected = format!(
+            r#"# This is just a comment
+# This is colors for my theme dark:
+{}
+set foreground as "{}""#,
+            vars,
+            theme.get("foreground").unwrap()
+        );
+
+        assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn valid_wrapper() {
+        let s = String::from("some string \n on newline");
+        let res = wrap_with_themer_block(s.clone(), &String::from("#"));
+
+        assert_eq!(res, format!("# THEMER\n{s}\n# THEMER_END"));
     }
 }

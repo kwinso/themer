@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileConfig {
@@ -20,10 +20,10 @@ fn default_format() -> String {
     "<key> = <value>".to_owned()
 }
 
-pub type ThemeVars = HashMap<String, String>;
+pub type ThemeVars = BTreeMap<String, String>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub themes: HashMap<String, ThemeVars>,
-    pub files: HashMap<String, FileConfig>,
+    pub themes: BTreeMap<String, ThemeVars>,
+    pub files: BTreeMap<String, FileConfig>,
 }
