@@ -25,7 +25,6 @@ enum Commands {
     Themes,
     /// List avaliable files in config file
     Files {
-        // TODO
         /// Check if config files are valid to be process by Themer
         #[clap(parse(from_flag), long)]
         check: bool,
@@ -78,8 +77,6 @@ fn list_files(config: Config, check: bool) {
     });
 }
 
-// TODO: Add & setup logger for pretty messages
-// TODO: Setup subcommands: themes, files (to list respectively), set (to set theme)
 fn main() {
     setup_logger();
 
@@ -110,8 +107,6 @@ fn main() {
                 .into_iter()
                 .for_each(|x| println!("  - {}", x.0));
         }
-        // TODO: Maybe check if configuration file is valid by checking
-        // if THEMER & THEMER_END comments exist
         Commands::Files { check } => {
             list_files(config, check);
         }
