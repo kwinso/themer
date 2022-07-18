@@ -71,7 +71,7 @@ fn list_files(config: Config, check: bool) {
                 err = format!("[{}]", e.to_string().red());
             }
 
-            println!(" {sign} {} ({}), {err}", x.0, x.1.path);
+            println!(" {sign} {} ({}) {err}", x.0, x.1.path);
             return;
         }
         println!("  - {} ({})", x.0, x.1.path);
@@ -95,7 +95,7 @@ fn main() {
     let config: Config = match serde_yaml::from_str(&config) {
         Ok(c) => c,
         Err(e) => {
-            log::error!("Failed to parse configuration file:\n{e}");
+            log::error!("Failed to parse configuration file:\n\t{e}");
             exit(1)
         }
     };

@@ -1,4 +1,5 @@
 use crate::config::{Config, FileConfig, ThemeVars};
+use colored::Colorize;
 use regex::{Regex, RegexBuilder};
 use std::{fs, process::exit};
 
@@ -7,7 +8,10 @@ pub fn update_configs(theme_name: String, config: Config) {
         Some(t) => t,
         None => {
             log::error!("Theme `{theme_name}` is not listed in configuration file.");
-            log::info!("Try to list avaliable themes with `themer list`");
+            println!(
+                " {} Try to list avaliable themes with `themer themes`",
+                "?".blue()
+            );
             exit(1);
         }
     };
