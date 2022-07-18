@@ -1,5 +1,6 @@
 use crate::config::{Config, FileConfig, ThemeVars};
-use std::process::exit;
+use regex::{Regex, RegexBuilder};
+use std::{fs, process::exit};
 
 pub fn update_configs(theme_name: String, config: Config) {
     let theme = match config.themes.get(&theme_name) {
@@ -10,14 +11,37 @@ pub fn update_configs(theme_name: String, config: Config) {
             exit(1);
         }
     };
+
     for (name, conf) in config.files {
         // TODO:
         //if let Some(custom) = conf.custom {
         //}
+        let contents = match fs::read_to_string(&conf.path) {
+            Ok(f) => f,
+            Err(e) => {
+                log::error!("Error reading `{}`:\n{e}", conf.path);
+                exit(1);
+            }
+        };
 
-        println!("{}", vars_to_themer_block(&theme, &conf));
-        println!();
+        let themer_block_re = get_block_re(&conf.comment);
+        if !themer_block_re.is_match(&contents) {
+            log::error!("Failed to find THEMER block inside of `{}`", conf.path);
+            exit(1);
+        }
+
+        let new_block = vars_to_themer_block(&theme, &conf);
+        let contents = themer_block_re.replacen(&contents, 1, new_block);
+
+        fs::write(&conf.path, contents.as_bytes()).unwrap();
     }
+}
+
+fn get_block_re(comment: &String) -> Regex {
+    RegexBuilder::new(&format!("{0} THEMER\n.*{0} THEMER_END", comment))
+        .dot_matches_new_line(true)
+        .build()
+        .unwrap()
 }
 
 fn vars_to_themer_block(vars: &ThemeVars, config: &FileConfig) -> String {
@@ -36,7 +60,7 @@ fn vars_to_themer_block(vars: &ThemeVars, config: &FileConfig) -> String {
 
     // Block is surrounded with newlines so no need to devide comment lines and the actual block
     // in this format! call
-    format!("{0} THEMER{block}{0} THEMER_END\n", config.comment)
+    format!("{0} THEMER{block}{0} THEMER_END", config.comment)
 }
 
 #[cfg(test)]

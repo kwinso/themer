@@ -93,6 +93,11 @@ fn main() {
         }
         Commands::Set { theme } => {
             engine::update_configs(theme, config);
+            println!(
+                "{}\n {} To see updates, you may need to reload your environment.",
+                "Theme succsessfully updated".green(),
+                "?".blue()
+            );
         }
     };
 }
