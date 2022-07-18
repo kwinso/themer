@@ -14,3 +14,4 @@ colored = "2.0.0"
 serde = { version = "1.0.139", features = ["derive"] }
 serde_yaml = "0.8.26"
 regex = "1.6.0"
+lazy_static = "1.4.0"

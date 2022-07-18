@@ -327,6 +327,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "colored",
+ "lazy_static",
  "log",
  "regex",
  "serde",
