@@ -1,6 +1,16 @@
 # Themer 
 A tool that allows you to update your desktop theme with just one command.
 
+# Installation
+
+Simple paste this command into your terminal:
+
+```bash
+bash <(curl https://gitlab.com/themer-cli/themer/-/raw/main/install.sh)
+```
+
+Script will prompt you before installation will begin.
+
 # Documentation
 You can go through [Guide](https://gitlab.com/themer-cli/themer/-/wikis/home) on Themer's Wiki page to get started.
 
