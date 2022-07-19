@@ -1,5 +1,8 @@
 # You can find more info on how to use this configuration file in Themer's wiki
 
+# Uncomment to specify shell command that will run after `themer set`
+#reload: "i3 restart"
+
 # place your themes' variables here
 themes:
    theme_name:
