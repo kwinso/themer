@@ -48,6 +48,7 @@ pub fn update_configs(theme_name: String, config: Config) {
 
 fn get_updated_block(theme_name: &String, theme: &ThemeVars, conf: &FileConfig) -> String {
     if let Some(mut custom) = conf.custom.clone() {
+        // TODO: Move variable expanding inside it's own block
         for var in get_custom_block_vars(&custom) {
             match var.as_str() {
                 "<vars>" => custom = custom.replace("<vars>", &format_vars(&theme, &conf)),

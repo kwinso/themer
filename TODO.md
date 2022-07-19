@@ -5,5 +5,7 @@
 - [X] Add Documentation
 - [ ] `reload` variable to run any command after configs update
 - [ ] Aliasing
+- [ ] `only` as the opposite to `ignore`
 - [ ] Imports
+  - [ ] Expand variables inside import statement for dynamic files
 
