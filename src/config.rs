@@ -26,4 +26,5 @@ pub type ThemeVars = BTreeMap<String, String>;
 pub struct Config {
     pub themes: BTreeMap<String, ThemeVars>,
     pub files: BTreeMap<String, FileConfig>,
+    pub reload: Option<String>,
 }

@@ -6,7 +6,7 @@ use colored::Colorize;
 use regex::{Regex, RegexBuilder};
 use std::{collections::HashSet, fs, process::exit};
 
-pub fn update_configs(theme_name: String, config: Config) {
+pub fn update_configs(theme_name: String, config: &Config) {
     let theme = match config.themes.get(&theme_name) {
         Some(t) => t,
         None => {
@@ -19,7 +19,7 @@ pub fn update_configs(theme_name: String, config: Config) {
         }
     };
 
-    for (_, conf) in config.files {
+    for (_, conf) in &config.files {
         let mut contents = match fs::read_to_string(expand_tilde(&conf.path)) {
             Ok(f) => f,
             Err(e) => {
