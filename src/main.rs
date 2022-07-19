@@ -60,7 +60,8 @@ fn list_files(config: Config, check: bool) {
     println!("{}", "Listed configuration files:".purple());
     config.files.into_iter().for_each(|x| {
         if check {
-            let valid: Result<(), &'static str> = match fs::read_to_string(&x.1.path) {
+            let valid: Result<(), &'static str> = match fs::read_to_string(expand_tilde(&x.1.path))
+            {
                 Err(_) => Err("Failed to read file."),
                 Ok(v) => {
                     let re = engine::get_block_re(&x.1.comment);
