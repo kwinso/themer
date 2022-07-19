@@ -105,9 +105,6 @@ fn main() {
         }
     };
 
-    println!("hello");
-    println!("{config:#?}");
-
     let command = args.command.unwrap_or(Commands::Themes);
 
     match command {
