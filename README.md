@@ -1,4 +1,4 @@
-# Themer [IN DEVELOPMENT]
+# Themer 
 A tool that allows you to update your desktop theme with just one command.
 
 # Documentation
