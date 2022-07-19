@@ -1,7 +1,7 @@
 echo "This script will install Themer into /usr/bin and create a directory inside of ~/.config"
 read -p "Press [ENTER] to continue installation: "
 
-sudo curl https://gitlab.com/themer-cli/themer/uploads/f499330efbc0f56dbde5a65ddc598801/themer -s --output /usr/bin/themer && \
+sudo curl https://gitlab.com/themer-cli/themer/-/raw/main/bin/themer -s --output /usr/bin/themer && \
 sudo chmod +x /usr/bin/themer && \
 
 mkdir -p ~/.config/themer
