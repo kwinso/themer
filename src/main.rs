@@ -105,6 +105,7 @@ fn main() {
             exit(1)
         }
     };
+    log::debug!("{config:#?}");
 
     let command = args.command.unwrap_or(Commands::Themes);
 

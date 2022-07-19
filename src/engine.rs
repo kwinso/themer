@@ -35,7 +35,8 @@ pub fn update_configs(theme_name: String, config: Config) {
         }
 
         let mut new_block = get_updated_block(&theme_name, theme, &conf);
-        new_block = wrap_with_themer_block(new_block, &&conf.comment);
+        // Replacing dollar sign to escape
+        new_block = wrap_with_themer_block(new_block, &&conf.comment).replace("$", "$$");
 
         contents = themer_block_re
             .replacen(&contents, 1, new_block)
