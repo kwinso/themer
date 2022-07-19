@@ -11,5 +11,5 @@ files:
     custom: |
       # This is just a comment
       # This is colors for my theme <name>:
-      <colors>
+      <vars>
       set foreground as "<foreground>"

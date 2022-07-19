@@ -49,7 +49,7 @@ fn get_updated_block(theme_name: &String, theme: &ThemeVars, conf: &FileConfig) 
     if let Some(mut custom) = conf.custom.clone() {
         for var in get_custom_block_vars(&custom) {
             match var.as_str() {
-                "<colors>" => custom = custom.replace("<colors>", &format_vars(&theme, &conf)),
+                "<vars>" => custom = custom.replace("<vars>", &format_vars(&theme, &conf)),
                 "<name>" => custom = custom.replace("<name>", &theme_name),
                 var => {
                     let plain_var = var.replace("<", "").replace(">", "");
