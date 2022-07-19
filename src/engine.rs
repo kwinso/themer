@@ -1,4 +1,7 @@
-use crate::config::{Config, FileConfig, ThemeVars};
+use crate::{
+    config::{Config, FileConfig, ThemeVars},
+    utils::expand_tilde,
+};
 use colored::Colorize;
 use regex::{Regex, RegexBuilder};
 use std::{collections::HashSet, fs, process::exit};
@@ -17,7 +20,7 @@ pub fn update_configs(theme_name: String, config: Config) {
     };
 
     for (_, conf) in config.files {
-        let mut contents = match fs::read_to_string(&conf.path) {
+        let mut contents = match fs::read_to_string(expand_tilde(&conf.path)) {
             Ok(f) => f,
             Err(e) => {
                 log::error!("Error reading `{}`:\n{e}", conf.path);
@@ -38,7 +41,7 @@ pub fn update_configs(theme_name: String, config: Config) {
             .replacen(&contents, 1, new_block)
             .to_string();
 
-        fs::write(&conf.path, contents.as_bytes()).unwrap();
+        fs::write(expand_tilde(&conf.path), contents.as_bytes()).unwrap();
     }
 }
 

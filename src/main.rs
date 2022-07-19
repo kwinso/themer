@@ -1,5 +1,6 @@
 mod config;
 mod engine;
+mod utils;
 
 use clap::{Parser, Subcommand};
 use colored::Colorize;
@@ -7,6 +8,7 @@ use config::Config;
 use log;
 use simplelog::{ColorChoice, ConfigBuilder, LevelFilter, TermLogger, TerminalMode};
 use std::{fs, process::exit};
+use utils::expand_tilde;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -86,7 +88,8 @@ fn main() {
     setup_logger();
 
     let args = Args::parse();
-    let config = match fs::read_to_string(args.config) {
+
+    let config = match fs::read_to_string(expand_tilde(&args.config)) {
         Ok(c) => c,
         Err(_) => {
             log::error!("Failed to read Themer configuration file.");
@@ -101,6 +104,9 @@ fn main() {
             exit(1)
         }
     };
+
+    println!("hello");
+    println!("{config:#?}");
 
     let command = args.command.unwrap_or(Commands::Themes);
 
