@@ -8,5 +8,6 @@ You can go through [Guide](https://gitlab.com/themer-cli/themer/-/wikis/home) on
 - [X] Automatically set/swap color scheme variables (practically any variables) defined in your configuration file
 - [X] Custom format: define your own code to be injected when you swap a theme.
 - [X] Ignoring variables you don't need for each file
-- [ ] Aliasing colors for some custom names 
+- [ ] Specify command to reload your environment automatically
+- [ ] Aliasing vars for some custom names 
 - [ ] `<import:path/to/file>` statement for importing files into user-defined code
