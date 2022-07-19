@@ -1,0 +1,26 @@
+# You can find more info on how to use this configuration file in Themer's wiki
+
+# place your themes' variables here
+themes:
+   theme_name:
+     var1: value
+     var2: value
+
+# list files you want to be managed by Themer
+files:
+  file_name:
+    path: "/path/to/file" # required
+    # List of theme's variables that should be ignored
+    ignore: []
+    # This tells Themer which character(s) is considered a single line comment
+    comment: "#" # required
+    # You may need to change this since different configs support different ways of assigning variables
+    format: "<key> = <value>" # default
+    custom: |
+      # This block will override default Themer's block
+      # Also you can place variables in here
+      # This theme is named <name>
+      # A signle varialbe
+      the_black_color = "<black>";
+      # All variables at once (basically, it places the default Themer block in your custom code)
+      <colors>
