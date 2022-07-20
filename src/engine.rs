@@ -3,8 +3,15 @@ use crate::{
     utils::expand_tilde,
 };
 use colored::Colorize;
+use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
-use std::{collections::HashSet, fs, process::exit};
+use std::{
+    collections::{hash_set::IntoIter, HashSet},
+    fs::{self},
+    path::PathBuf,
+    process::exit,
+    str::FromStr,
+};
 
 pub fn update_configs(theme_name: String, config: &Config) {
     let theme = match config.themes.get(&theme_name) {
@@ -34,7 +41,7 @@ pub fn update_configs(theme_name: String, config: &Config) {
             exit(1);
         }
 
-        let mut new_block = get_updated_block(&theme_name, theme, &conf);
+        let mut new_block = generate_contents(&theme_name, theme, &conf);
         // Replacing dollar sign to escape
         new_block = wrap_with_themer_block(new_block, &&conf.comment).replace("$", "$$");
 
@@ -46,44 +53,105 @@ pub fn update_configs(theme_name: String, config: &Config) {
     }
 }
 
-fn get_updated_block(theme_name: &String, theme: &ThemeVars, conf: &FileConfig) -> String {
-    if let Some(mut custom) = conf.custom.clone() {
-        // TODO: Move variable expanding inside it's own block
-        for var in get_custom_block_vars(&custom) {
-            match var.as_str() {
-                "<vars>" => custom = custom.replace("<vars>", &format_vars(&theme, &conf)),
-                "<name>" => custom = custom.replace("<name>", &theme_name),
-                var => {
-                    let plain_var = var.replace("<", "").replace(">", "");
-
-                    if let Some(v) = theme.get(&plain_var) {
-                        custom = custom.replace(var, v);
-                    } else {
-                        log::warn!(
-                            "Custom block for file `{}`: variable {var} cannot be found.",
-                            conf.path
-                        );
-                    }
-                }
-            };
-        }
-
-        return custom.trim_end().to_owned();
+fn generate_contents(theme_name: &String, theme: &ThemeVars, conf: &FileConfig) -> String {
+    match &conf.custom {
+        Some(custom) => expand_variables(custom.to_owned(), 0, &theme_name, theme, &conf),
+        None => format_vars(&theme, &conf),
     }
-    format_vars(&theme, &conf)
 }
 
-/// Finds unique variables in contents block
-fn get_custom_block_vars(contents: &String) -> Vec<String> {
-    lazy_static::lazy_static! {
-        static ref RE: Regex = Regex::new("<.*>").unwrap();
+fn expand_variables(
+    mut contents: String,
+    depth: u8,
+    theme_name: &String,
+    theme: &ThemeVars,
+    conf: &FileConfig,
+) -> String {
+    // TODO: Move variable expanding inside it's own function
+    for var in extract_vars(&contents) {
+        match var.as_str() {
+            "<vars>" => contents = contents.replace("<vars>", &format_vars(&theme, &conf)),
+            "<name>" => contents = contents.replace("<name>", &theme_name),
+            var => {
+                let var_name = var.replace("<", "").replace(">", "");
+
+                if let Some(v) = theme.get(&var_name) {
+                    contents = contents.replace(var, v);
+                } else {
+                    log::warn!(
+                        "Custom block for file `{}`: variable {var} cannot be found.",
+                        conf.path
+                    );
+                }
+            }
+        };
     }
 
-    RE.find_iter(contents)
+    for import in extract_imports(&contents) {
+        if depth == 1 {
+            log::error!("Maximum import depth exceeded (tried to import <{import}>)");
+            println!(
+                " {} Probably, you've tried to <import> a file from already imported file",
+                "?".blue()
+            );
+            exit(1);
+        }
+
+        let path = match import.split(" ").nth(1) {
+            Some(v) => {
+                log::debug!("Importing {v:#?}");
+                PathBuf::from(expand_tilde(&v.to_string()))
+            }
+            None => {
+                log::error!("`{import}` is not valid.");
+                log::info!("Import path should consist of import keyword and a path separated by whitespace.");
+                continue;
+            }
+        };
+
+        let import_contents = match fs::read_to_string(path) {
+            Ok(v) => v,
+            Err(e) => {
+                log::error!("Failed to resolve import `{import}`: {e}");
+                exit(1);
+            }
+        };
+
+        let expanded = expand_variables(import_contents, depth + 1, theme_name, theme, conf);
+        contents = contents.replace(&format!("<{import}>"), &expanded);
+    }
+
+    return contents.trim_end().to_owned();
+}
+
+/// Finds unique imports inside contents
+fn extract_imports(contents: &String) -> Vec<String> {
+    lazy_static! {
+        // Matches only single word tokens: no variables inside variables
+        static ref RE: Regex = Regex::new("<import .*>").unwrap();
+    }
+
+    find_with_re(contents, &RE)
+        .map(|x| x.replace("<", "").replace(">", ""))
+        .collect()
+}
+
+/// Finds unique variables inside contents
+fn extract_vars(contents: &String) -> Vec<String> {
+    lazy_static! {
+        // Matches only single word tokens: no variables inside variables
+        static ref RE: Regex = Regex::new("<\\S+[^<>]>").unwrap();
+    }
+
+    find_with_re(contents, &RE).collect()
+}
+
+// A generic function to retrive unique substrings from string with Regex
+fn find_with_re(contents: &String, re: &Regex) -> IntoIter<String> {
+    re.find_iter(contents)
         .map(|x| x.as_str().to_string())
         .collect::<HashSet<String>>()
         .into_iter()
-        .collect()
 }
 
 pub fn get_block_re(comment: &String) -> Regex {
@@ -116,10 +184,12 @@ fn format_vars(vars: &ThemeVars, config: &FileConfig) -> String {
     block.trim_end().to_owned()
 }
 
-// TODO: Add test to check writing to files
+// TODO: test ignoring variables
+// TODO: test "only" variables
+// TODO: test imports (with vars inside paths)
 #[cfg(test)]
 mod tests {
-    use super::{format_vars, get_updated_block, wrap_with_themer_block};
+    use super::{format_vars, generate_contents, wrap_with_themer_block};
     use crate::config::Config;
     use std::fs;
 
@@ -148,7 +218,7 @@ mod tests {
         let theme = conf.themes.get("dark").unwrap();
         let file = conf.files.get("custom").unwrap();
 
-        let res = get_updated_block(&"dark".to_owned(), &theme, &file);
+        let res = generate_contents(&"dark".to_owned(), &theme, &file);
 
         let vars = format_vars(&theme, &file);
 
