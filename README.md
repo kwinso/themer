@@ -6,13 +6,13 @@ A tool that allows you to update your desktop theme with just one command.
 Simple paste this command into your terminal:
 
 ```bash
-bash <(curl https://gitlab.com/themer-cli/themer/-/raw/main/install.sh)
+bash <(curl https://raw.githubusercontent.com/uwumouse/themer/main/install.sh)
 ```
 
 Script will prompt you before installation will begin.
 
 # Documentation
-You can go through [Guide](https://gitlab.com/themer-cli/themer/-/wikis/home) on Themer's Wiki page to get started.
+You can go through project's [Wiki](https://github.com/uwumouse/themer/wiki) on Themer's Wiki page to get started.
 
 ## What Themer can do?
 - [X] Automatically set/swap color scheme variables (practically any variables) defined in your configuration file
