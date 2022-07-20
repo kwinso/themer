@@ -20,4 +20,4 @@ You can go through [Guide](https://gitlab.com/themer-cli/themer/-/wikis/home) on
 - [X] Ignoring variables you don't need for each file
 - [ ] Specify command to reload your environment automatically
 - [ ] Aliasing vars for some custom names 
-- [ ] `<import:path/to/file>` statement for importing files into user-defined code
+- [X] Import files inside custom block
