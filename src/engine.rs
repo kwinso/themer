@@ -7,10 +7,9 @@ use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
 use std::{
     collections::{hash_set::IntoIter, HashSet},
-    fs::{self},
+    fs,
     path::PathBuf,
     process::exit,
-    str::FromStr,
 };
 
 pub fn update_configs(theme_name: String, config: &Config) {
@@ -240,5 +239,21 @@ set foreground as "{}""#,
         let res = wrap_with_themer_block(s.clone(), &String::from("#"));
 
         assert_eq!(res, format!("# THEMER\n{s}\n# THEMER_END"));
+    }
+
+    #[test]
+    fn imports() {
+        let conf = load_config("imports");
+
+        let res = generate_contents(
+            &"dark".to_owned(),
+            &conf.themes.get("dark").unwrap(),
+            &conf.files.get("imports").unwrap(),
+        );
+
+        assert_eq!(
+            res,
+            "# This is imported file for theme dark\nbackground = #000000\nforeground = #ffffff"
+        )
     }
 }
