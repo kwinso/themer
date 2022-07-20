@@ -1,0 +1,10 @@
+themes:
+  dark:
+    background: "#000000"
+    foreground: "#ffffff"
+
+files:
+  imports: 
+    path: "/"
+    comment: "#"
+    custom: "<import ./test-configs/imports/test-<name>>"
