@@ -1,7 +1,7 @@
 # You can find more info on how to use this configuration file in Themer's wiki
 
 # Uncomment to specify shell command that will run after `themer set`
-#reload: "i3 restart"
+# reload: "i3 restart"
 
 # place your themes' variables here
 themes:
@@ -15,6 +15,13 @@ files:
     path: "/path/to/file" # required
     # List of theme's variables that should be ignored
     ignore: []
+    # Keep only needed variables (have more priority than `ignore`
+    only: []
+    # Rename variables, if needed
+    aliases: 
+      # The syntax is: `new_name: old_name`
+      foo: var1
+      bar: var2
     # This tells Themer which character(s) is considered a single line comment
     comment: "#" # required
     # You may need to change this since different configs support different ways of assigning variables
@@ -22,8 +29,11 @@ files:
     custom: |
       # This block will override default Themer's block
       # Also you can place variables in here
-      # This theme is named <name>
       # A signle varialbe
+      theme_name = "<name>"
       the_black_color = "<black>";
+      # You can import any files you need to embed here.
+      # Imports are dynamic - specify any variable inside import path!
+      <import ~/themes/<name>/themer-embed.txt>
       # All variables at once (basically, it places the default Themer block in your custom code)
       <colors>
