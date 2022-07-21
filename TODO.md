@@ -4,7 +4,7 @@
   - [X] Var formatting 
 - [X] Add Documentation
 - [X] `reload` variable to run any command after configs update
-- [ ] Aliasing
+- [X] Aliasing
 - [X] `only` as the opposite to `ignore`
 - [X] Imports
   - [X] Expand variables inside import statement for dynamic files
