@@ -28,6 +28,7 @@ pub fn update_configs(theme_name: String, config: &Config) {
     for (_, conf) in &config.files {
         let mut theme = theme.clone();
 
+        // If there is any aliases, override default theme's vars
         if let Some(aliases) = &conf.aliases {
             apply_aliases(&mut theme, aliases);
         }
@@ -61,6 +62,7 @@ pub fn update_configs(theme_name: String, config: &Config) {
 fn apply_aliases(theme: &mut ThemeVars, aliases: &ThemeVars) {
     for (new_key, old_key) in aliases {
         if theme.contains_key(old_key) {
+            // Remove old key and add new one to ThemeVars
             let val = theme.get(old_key).unwrap().clone();
             theme.remove(old_key);
             theme.insert(new_key.to_owned(), val.to_owned());
@@ -189,12 +191,14 @@ fn format_vars(vars: &ThemeVars, config: &FileConfig) -> String {
 
     let mut filter_closure: Option<Box<dyn FnMut(&(&String, &String)) -> bool>> = None;
 
+    // `only` has more "power" than `ignore`, so here we decide how to filter variables
     if !config.only.is_empty() {
         filter_closure = Some(Box::new(|x| config.only.contains(x.0)));
     } else if !config.ignore.is_empty() {
         filter_closure = Some(Box::new(|x| !config.ignore.contains(x.0)));
     }
 
+    // Filters variables if needed, otherwise leaving everything as it was
     let vars = vars
         .into_iter()
         .filter(filter_closure.unwrap_or(Box::new(|_| true)));
@@ -213,9 +217,6 @@ fn format_vars(vars: &ThemeVars, config: &FileConfig) -> String {
     block.trim_end().to_owned()
 }
 
-// TODO: test ignoring variables
-// TODO: test "only" variables
-// TODO: test imports (with vars inside paths)
 #[cfg(test)]
 mod tests {
     use super::{apply_aliases, format_vars, generate_contents, wrap_with_themer_block};
