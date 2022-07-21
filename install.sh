@@ -3,6 +3,8 @@ GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
+TAG="v1.2.0"
+
 function download_config() {
   mkdir -p ~/.config/themer
 
@@ -16,7 +18,7 @@ function download_config() {
       case $yn in
           [Yy]* ) 
             echo -e "${BLUE}Downloading default config to $CONFIG... $NC"
-            wget https://github.com/uwumouse/themer/releases/latest/download/config.yml -q --show-progress -O $CONFIG
+            wget https://github.com/uwumouse/themer/releases/download/$TAG/config.yml -q --show-progress -O $CONFIG
             break;;
           [Nn]* ) break;;
           * ) echo -e "Please answer \"${BLUE}Y$NC\" or \"${BLUE}N$NC\".";;
@@ -37,6 +39,6 @@ read
 
 echo -e "${BLUE}Downloading Themer binary... $NC"
 
-sudo wget https://github.com/uwumouse/themer/releases/latest/download/themer -q --show-progress -O /usr/bin/themer && \
+sudo wget https://github.com/uwumouse/themer/releases/download/$TAG/themer -q --show-progress -O /usr/bin/themer && \
 sudo chmod +x /usr/bin/themer && \
 download_config && print_success
