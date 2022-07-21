@@ -18,7 +18,8 @@ function download_config() {
       case $yn in
           [Yy]* ) 
             echo -e "${BLUE}Downloading default config to $CONFIG... $NC"
-            wget https://github.com/uwumouse/themer/releases/download/$TAG/config.yml -q --show-progress -O $CONFIG
+            wget https://github.com/uwumouse/themer/releases/download/$TAG/config.yml -q --show-progress -O $CONFIG && \
+            echo -e "Default config is dowloaded to: ${BLUE}$CONFIG$NC"
             break;;
           [Nn]* ) break;;
           * ) echo -e "Please answer \"${BLUE}Y$NC\" or \"${BLUE}N$NC\".";;
@@ -30,7 +31,6 @@ function download_config() {
 function print_success() {
   echo
   echo -e "${GREEN}Themer successfully installed!"
-  echo -e "Check out default configuration file inside of ${BLUE}$CONFIG$NC"
 }
 
 echo "This script will install Themer into /usr/bin and create a directory inside of ~/.config"
