@@ -169,7 +169,19 @@ fn wrap_with_themer_block(contents: String, comment: &String) -> String {
 fn format_vars(vars: &ThemeVars, config: &FileConfig) -> String {
     let mut block = String::new();
 
-    for (key, val) in vars.into_iter().filter(|x| !config.ignore.contains(x.0)) {
+    let mut filter_closure: Option<Box<dyn FnMut(&(&String, &String)) -> bool>> = None;
+
+    if !config.only.is_empty() {
+        filter_closure = Some(Box::new(|x| config.only.contains(x.0)));
+    } else if !config.ignore.is_empty() {
+        filter_closure = Some(Box::new(|x| !config.ignore.contains(x.0)));
+    }
+
+    let vars = vars
+        .into_iter()
+        .filter(filter_closure.unwrap_or(Box::new(|_| true)));
+
+    for (key, val) in vars {
         block.push_str(
             &config
                 .format

@@ -5,6 +5,8 @@ use std::collections::BTreeMap;
 pub struct FileConfig {
     pub path: String,
     #[serde(default)]
+    pub only: Vec<String>,
+    #[serde(default)]
     pub ignore: Vec<String>,
     #[serde(default = "default_comment")]
     pub comment: String,
