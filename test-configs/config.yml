@@ -1,0 +1,42 @@
+themes:
+  theme:
+    background: "#000000"
+    foreground: "#ffffff"
+
+# Paths are set to / only because Themer does not really write anything to files
+# in thest environment
+files:
+  basic: 
+    path: "/"
+    comment: ";"
+    format: "set my_<key> as \"<value>\""
+
+  custom: 
+    path: "/"
+    comment: "#"
+    format: "set my_<key> as \"<value>\""
+    custom: |
+      # This is just a comment
+      # This is colors for my theme <name>:
+      <vars>
+      set foreground as "<foreground>"
+
+  imports: 
+    path: "/"
+    comment: "#"
+    custom: "<import ./test-configs/imports/test-<name>>"
+
+  ignore: 
+    path: "/"
+    ignore: ["foreground"]
+
+  only: 
+    path: "/"
+    only: ["foreground"]
+
+  aliases:
+    path: "/"
+    aliases:
+      bg: background
+      fg: foreground
+

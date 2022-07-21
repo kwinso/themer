@@ -26,6 +26,12 @@ pub fn update_configs(theme_name: String, config: &Config) {
     };
 
     for (_, conf) in &config.files {
+        let mut theme = theme.clone();
+
+        if let Some(aliases) = &conf.aliases {
+            apply_aliases(&mut theme, aliases);
+        }
+
         let mut contents = match fs::read_to_string(expand_tilde(&conf.path)) {
             Ok(f) => f,
             Err(e) => {
@@ -40,7 +46,7 @@ pub fn update_configs(theme_name: String, config: &Config) {
             exit(1);
         }
 
-        let mut new_block = generate_contents(&theme_name, theme, &conf);
+        let mut new_block = generate_contents(&theme_name, &theme, &conf);
         // Replacing dollar sign to escape
         new_block = wrap_with_themer_block(new_block, &&conf.comment).replace("$", "$$");
 
@@ -49,6 +55,18 @@ pub fn update_configs(theme_name: String, config: &Config) {
             .to_string();
 
         fs::write(expand_tilde(&conf.path), contents.as_bytes()).unwrap();
+    }
+}
+
+fn apply_aliases(theme: &mut ThemeVars, aliases: &ThemeVars) {
+    for (new_key, old_key) in aliases {
+        if theme.contains_key(old_key) {
+            let val = theme.get(old_key).unwrap().clone();
+            theme.remove(old_key);
+            theme.insert(new_key.to_owned(), val.to_owned());
+        } else {
+            log::warn!("Failed to alias {new_key}: {old_key} does not exist");
+        }
     }
 }
 
@@ -200,23 +218,27 @@ fn format_vars(vars: &ThemeVars, config: &FileConfig) -> String {
 // TODO: test imports (with vars inside paths)
 #[cfg(test)]
 mod tests {
-    use super::{format_vars, generate_contents, wrap_with_themer_block};
-    use crate::config::Config;
+    use super::{apply_aliases, format_vars, generate_contents, wrap_with_themer_block};
+    use crate::config::{Config, FileConfig, ThemeVars};
     use std::fs;
 
-    fn load_config(name: &'static str) -> Config {
-        serde_yaml::from_str(&fs::read_to_string(format!("./test-configs/{name}.yml")).unwrap())
-            .unwrap()
+    fn load_config(file: &'static str) -> (ThemeVars, FileConfig) {
+        let conf: Config = serde_yaml::from_str(
+            &fs::read_to_string(format!("./test-configs/config.yml")).unwrap(),
+        )
+        .unwrap();
+
+        (
+            conf.themes.get("theme").unwrap().to_owned(),
+            conf.files.get(file).unwrap().to_owned(),
+        )
     }
 
     #[test]
     fn valid_themer_block() {
-        let conf = load_config("basic");
+        let (themes, conf) = load_config("basic");
 
-        let res = format_vars(
-            &conf.themes.get("dark").unwrap(),
-            &conf.files.get("basic").unwrap(),
-        );
+        let res = format_vars(&themes, &conf);
         assert_eq!(
             res,
             "set my_background as \"#000000\"\nset my_foreground as \"#ffffff\""
@@ -225,17 +247,15 @@ mod tests {
 
     #[test]
     fn valid_custom_block() {
-        let conf = load_config("custom");
-        let theme = conf.themes.get("dark").unwrap();
-        let file = conf.files.get("custom").unwrap();
+        let (theme, file) = load_config("custom");
 
-        let res = generate_contents(&"dark".to_owned(), &theme, &file);
+        let res = generate_contents(&"theme".to_owned(), &theme, &file);
 
         let vars = format_vars(&theme, &file);
 
         let expected = format!(
             r#"# This is just a comment
-# This is colors for my theme dark:
+# This is colors for my theme theme:
 {}
 set foreground as "{}""#,
             vars,
@@ -255,17 +275,39 @@ set foreground as "{}""#,
 
     #[test]
     fn imports() {
-        let conf = load_config("imports");
+        let (themes, conf) = load_config("imports");
 
-        let res = generate_contents(
-            &"dark".to_owned(),
-            &conf.themes.get("dark").unwrap(),
-            &conf.files.get("imports").unwrap(),
-        );
+        let res = generate_contents(&"theme".to_owned(), &themes, &conf);
+        println!("{res:#?}");
 
         assert_eq!(
             res,
-            "# This is imported file for theme dark\nbackground = #000000\nforeground = #ffffff"
+            "# This is imported file for theme theme\nbackground = #000000\nforeground = #ffffff"
         )
+    }
+
+    #[test]
+    fn ignore() {
+        let (themes, conf) = load_config("ignore");
+        let res = generate_contents(&"teheme".to_owned(), &themes, &conf);
+
+        assert_eq!(res, "background = #000000");
+    }
+
+    #[test]
+    fn only() {
+        let (themes, conf) = load_config("only");
+        let res = generate_contents(&"theme".to_owned(), &themes, &conf);
+
+        assert_eq!(res, "foreground = #ffffff");
+    }
+
+    #[test]
+    fn aliases() {
+        let (mut themes, conf) = load_config("aliases");
+        apply_aliases(&mut themes, &conf.aliases.as_ref().unwrap());
+        let res = generate_contents(&"theme".to_owned(), &themes, &conf);
+
+        assert_eq!(res, "bg = #000000\nfg = #ffffff");
     }
 }
