@@ -1,6 +1,6 @@
 [package]
 name = "themer"
-description = "Update theme colors in your config files with single command"
+description = "Update theme variables in your config files with single command"
 version = "1.2.0"
 edition = "2021"
 

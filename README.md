@@ -1,5 +1,5 @@
 # Themer 
-A tool that allows you to update your desktop theme with just one command.
+Update all of your config files to match same theme with just one line in terminal.
 
 # Installation
 
