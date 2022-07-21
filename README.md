@@ -14,7 +14,6 @@ Any other version can be installed with similar command by swapping `<release ta
 bash <(curl https://github.com/uwumouse/themer/releases/download/<release tag>/install.sh)
 ```
 
-
 # Documentation
 You can go through project's [Wiki](https://github.com/uwumouse/themer/wiki) on Themer's Wiki page to get started.
 
@@ -22,6 +21,6 @@ You can go through project's [Wiki](https://github.com/uwumouse/themer/wiki) on 
 - [X] Automatically set/swap color scheme variables (practically any variables) defined in your configuration file
 - [X] Custom format: define your own code to be injected when you swap a theme.
 - [X] Ignoring variables you don't need for each file
-- [ ] Specify command to reload your environment automatically
-- [ ] Aliasing vars for some custom names 
-- [ ] Import files inside custom block
+- [X] Specify command to reload your environment automatically
+- [X] Aliasing vars for some custom names 
+- [X] Import files inside custom block

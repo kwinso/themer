@@ -7,6 +7,7 @@ use colored::Colorize;
 use config::Config;
 use log;
 use simplelog::{ColorChoice, ConfigBuilder, LevelFilter, TermLogger, TerminalMode};
+use std::process::Command;
 use std::{fs, process::exit};
 use utils::expand_tilde;
 
@@ -121,12 +122,29 @@ fn main() {
             list_files(config, check);
         }
         Commands::Set { theme } => {
-            engine::update_configs(theme, config);
-            println!(
-                "{}\n {} To see updates, you may need to reload your environment.",
-                "Theme succsessfully updated".green(),
-                "?".blue()
-            );
+            engine::update_configs(theme, &config);
+            if let Some(reload_cmd) = config.reload {
+                println!("{}", "Running reload command...".blue());
+
+                let mut cmd = Command::new("sh");
+                match cmd.args(["-c", &reload_cmd]).output() {
+                    Ok(output) => {
+                        if output.status.success() {
+                            println!("{}", "Environment succsessfully reloaded!".green());
+                        } else {
+                            log::error!("Unsuccessfull outcome of reload command:");
+                            println!("\t{}", output.status);
+                        }
+                    }
+                    Err(_) => log::error!("Failed to run reload command"),
+                }
+            } else {
+                println!(
+                    "{}\n {} To see updates, you may need to reload your environment.",
+                    "Theme succsessfully updated".green(),
+                    "?".blue()
+                );
+            }
         }
     };
 }
