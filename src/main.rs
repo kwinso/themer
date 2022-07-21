@@ -94,7 +94,10 @@ fn main() {
     let config = match fs::read_to_string(expand_tilde(&args.config)) {
         Ok(c) => c,
         Err(_) => {
-            log::error!("Failed to read Themer configuration file.");
+            log::error!(
+                "Failed to read Themer configuration file in '{}'",
+                args.config
+            );
             exit(1);
         }
     };
