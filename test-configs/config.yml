@@ -14,12 +14,12 @@ files:
   custom: 
     path: "/"
     comment: "#"
-    format: "set my_<key> as \"<value>\""
+    format: "set <key> as <value>"
     custom: |
       # This is just a comment
       # This is colors for my theme <name>:
       <vars>
-      set foreground as "<foreground>"
+      set foreground as <foreground>
 
   imports: 
     path: "/"

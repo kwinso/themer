@@ -1,5 +1,6 @@
+mod block;
 mod config;
-mod engine;
+mod updates;
 mod utils;
 
 use clap::{Parser, Subcommand};
@@ -65,7 +66,7 @@ fn list_files(config: Config, check: bool) {
             {
                 Err(_) => Err("Failed to read file."),
                 Ok(v) => {
-                    let re = engine::get_block_re(&x.1.comment);
+                    let re = updates::UpdatesGenerator::get_block_re(&x.1.comment);
                     match re.is_match(&v) {
                         true => Ok(()),
                         false => Err("No THEMER block found."),
@@ -125,7 +126,7 @@ fn main() {
             list_files(config, check);
         }
         Commands::Set { theme } => {
-            engine::update_configs(theme, &config);
+            updates::run(theme, &config);
             if let Some(reload_cmd) = config.reload {
                 println!("{}", "Running reload command...".blue());
 
