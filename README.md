@@ -5,13 +5,13 @@ A tool that allows you to update your desktop theme with just one command.
 
 To install latest version of Themer, execute this command inside of your terminal
 ```bash
-bash <(curl https://github.com/uwumouse/themer/releases/latest/download/install.sh)
+bash <(curl https://github.com/uwumouse/themer/releases/latest/download/install.sh -L -s)
 ```
 Script will prompt you before installation will begin.
 
 Any other version can be installed with similar command by swapping `<release tag>` with the desired version prefixed by `v`
 ```bash
-bash <(curl https://github.com/uwumouse/themer/releases/download/<release tag>/install.sh)
+bash <(curl https://github.com/uwumouse/themer/releases/download/<release tag>/install.sh -L -s)
 ```
 
 # Documentation
