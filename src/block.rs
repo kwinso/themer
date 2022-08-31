@@ -242,7 +242,7 @@ impl BlockGenerator {
 #[cfg(test)]
 mod tests {
     use super::BlockGenerator;
-    use crate::config::{BlockConfig, Config, FileConfig, ThemeVars};
+    use crate::config::{Config, FileConfig, ThemeVars};
     use std::fs;
 
     fn load_config(file: &'static str) -> (ThemeVars, FileConfig) {
