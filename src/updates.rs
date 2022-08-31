@@ -27,37 +27,42 @@ pub fn run(theme_name: String, config: &Config) {
     let mut update_gen = UpdatesGenerator::new(block_gen);
 
     for (_, conf) in &config.files {
-        let mut results: Result<String, UpdatesError> = Ok(String::new());
         let mut tag = None;
-        let mut path = String::new();
         match conf {
-            FileConfig::Multi(mutli) => mutli.clone().blocks.into_iter().for_each(|(t, c)| {
-                let config = BlockConfig {
-                    path: mutli.path.clone(),
-                    comment: mutli.comment.clone(),
-                    block: c,
-                };
-
-                path = mutli.path.clone();
-                tag = Some(t);
-                results = update_gen.generate(&config, &tag);
-            }),
             FileConfig::Single(config) => {
-                path = config.path.clone();
-                tag = None;
-                results = update_gen.generate(config, &tag);
+                let results = update_gen.generate(config, &tag);
+                print_err(results, &None, &config.path);
+            }
+            FileConfig::Multi(mutli) => {
+                mutli.clone().blocks.into_iter().for_each(|(t, c)| {
+                    let config = BlockConfig {
+                        path: mutli.path.clone(),
+                        comment: mutli.comment.clone(),
+                        block: c,
+                    };
+
+                    tag = Some(t);
+                    let results = update_gen.generate(&config, &tag);
+                    print_err(results, &tag, &mutli.path);
+                });
             }
         }
-        match results {
-            Ok(s) => fs::write(expand_tilde(&path), s.as_bytes()).unwrap(),
-            Err(e) => match e {
-                UpdatesError::NoBlock => log::error!(
+    }
+}
+
+fn print_err(results: Result<String, UpdatesError>, tag: &Option<String>, path: &String) {
+    match results {
+        Ok(s) => fs::write(expand_tilde(&path), s.as_bytes()).unwrap(),
+        Err(e) => match e {
+            UpdatesError::InvalidBlock => {
+                println!("Hello");
+                log::error!(
                     "Failed to find Themer block (tag: {}) inside {path}",
-                    tag.unwrap_or("No tag".to_string())
-                ),
-                UpdatesError::UnableToRead => log::error!("Failed to read file {path}"),
-            },
-        }
+                    tag.clone().unwrap_or("No tag".to_string())
+                )
+            }
+            UpdatesError::UnableToRead => log::error!("Failed to read file {path}"),
+        },
     }
 }
 
@@ -65,9 +70,10 @@ pub struct UpdatesGenerator {
     pub block_generator: BlockGenerator,
 }
 
+#[derive(Debug)]
 pub enum UpdatesError {
     UnableToRead,
-    NoBlock,
+    InvalidBlock,
 }
 
 impl UpdatesGenerator {
@@ -88,7 +94,7 @@ impl UpdatesGenerator {
 
     pub fn validate_block(&self, contents: &String) -> Result<(), UpdatesError> {
         if !self.block_generator.get_re().is_match(contents) {
-            return Err(UpdatesError::NoBlock);
+            return Err(UpdatesError::InvalidBlock);
         }
 
         Ok(())
@@ -103,7 +109,6 @@ impl UpdatesGenerator {
         self.block_generator.set_tag(tag.clone());
 
         let contents = self.read_file(&config.path)?;
-
         self.validate_block(&contents)?;
 
         let mut update = self.block_generator.generate();
