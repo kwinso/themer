@@ -23,7 +23,8 @@ files:
       foo: var1
       bar: var2
     # This tells Themer which character(s) is considered a single line comment
-    comment: "#" # required
+    comment: "#" # default value
+    closing_comment: "" # May be needed for files like .css, so you have something like /* THEMER */ comments
     # You may need to change this since different configs support different ways of assigning variables
     format: "<key> = <value>" # default
     custom: |
@@ -37,3 +38,29 @@ files:
       <import ~/themes/<name>/themer-embed.txt>
       # All variables at once (basically, it places the default Themer block in your custom code)
       <colors>
+  mutliple_codeblocks:
+    path: "/path/to/file"
+    comment: "\""
+    closing_comment: ""
+
+    # Blocks represent a code block with a tag inside your config file
+    # Instead of:
+    # # THEMER
+    # content here.. 
+    # # THEMER_END
+    #
+    # Each Themer block comment will be suffixed with a block name like this:
+    # # THEMER:blockname 
+    # content here.. 
+    # # THEMER_END:blockname
+    blocks:
+      # For this block your Themer block should look like this 
+      # (notice using a double qoute as the comment line sequece):
+      
+      # " THEMER:vars
+      # " THEMER_END:vars
+      vars:
+        # Here you can set any of the known values except `path`, `comment` & `closing_comment`
+        # since these values already set for the current file
+        format: "let <key> = <value>"
+
