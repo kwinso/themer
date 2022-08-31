@@ -3,7 +3,7 @@ GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
-TAG="v1.2.0"
+TAG="v1.3.0"
 
 function download_config() {
   mkdir -p ~/.config/themer
