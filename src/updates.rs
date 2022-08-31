@@ -1,15 +1,14 @@
 use crate::{
     block::BlockGenerator,
-    config::{BlockConfig, Config, FileConfig, ThemeVars},
+    config::{BlockConfig, Config, FileConfig},
     utils::expand_tilde,
 };
 use colored::Colorize;
-use regex::{Regex, RegexBuilder};
 use std::{fs, process::exit};
 
 pub fn run(theme_name: String, config: &Config) {
-    let theme = match config.themes.get(&theme_name) {
-        Some(t) => t,
+    let vars = match config.themes.get(&theme_name) {
+        Some(t) => t.clone(),
         None => {
             log::error!("Theme `{theme_name}` is not listed in configuration file.");
             println!(
@@ -19,93 +18,101 @@ pub fn run(theme_name: String, config: &Config) {
             exit(1);
         }
     };
-    let update_gen = UpdatesGenerator::new(theme_name, theme.clone());
+
+    let block_gen = BlockGenerator::new(
+        theme_name,
+        &vars,
+        FileConfig::Single(BlockConfig::default()),
+    );
+    let mut update_gen = UpdatesGenerator::new(block_gen);
 
     for (_, conf) in &config.files {
+        let mut results: Result<String, UpdatesError> = Ok(String::new());
+        let mut tag = None;
+        let mut path = String::new();
         match conf {
-            FileConfig::Multi(mutli) => mutli.blocks.clone().into_iter().for_each(|(tag, c)| {
+            FileConfig::Multi(mutli) => mutli.clone().blocks.into_iter().for_each(|(t, c)| {
                 let config = BlockConfig {
                     path: mutli.path.clone(),
                     comment: mutli.comment.clone(),
                     block: c,
                 };
-                write_update(&mutli.path, update_gen.generate(&config, Some(tag)));
+
+                path = mutli.path.clone();
+                tag = Some(t);
+                results = update_gen.generate(&config, &tag);
             }),
             FileConfig::Single(config) => {
-                write_update(&config.path, update_gen.generate(config, None));
+                path = config.path.clone();
+                tag = None;
+                results = update_gen.generate(config, &tag);
             }
         }
-    }
-}
-
-fn write_update(path: &String, update: Option<String>) {
-    if let Some(update) = update {
-        fs::write(expand_tilde(&path), update.as_bytes()).unwrap();
+        match results {
+            Ok(s) => fs::write(expand_tilde(&path), s.as_bytes()).unwrap(),
+            Err(e) => match e {
+                UpdatesError::NoBlock => log::error!(
+                    "Failed to find Themer block (tag: {}) inside {path}",
+                    tag.unwrap_or("No tag".to_string())
+                ),
+                UpdatesError::UnableToRead => log::error!("Failed to read file {path}"),
+            },
+        }
     }
 }
 
 pub struct UpdatesGenerator {
-    theme_name: String,
-    theme: ThemeVars,
+    pub block_generator: BlockGenerator,
+}
+
+pub enum UpdatesError {
+    UnableToRead,
+    NoBlock,
 }
 
 impl UpdatesGenerator {
-    pub fn new(theme_name: String, theme: ThemeVars) -> Self {
-        Self { theme_name, theme }
-    }
-
-    pub fn generate(&self, config: &BlockConfig, tag: Option<String>) -> Option<String> {
-        let blk_gen = BlockGenerator::new(
-            &self.theme_name,
-            &self.theme,
-            FileConfig::Single(config.clone()),
-        );
-        let tags = BlockGenerator::get_block_tags(&tag);
-
-        let contents = self.get_file_contents(config, &tags);
-        if let Err(_) = contents {
-            return None;
+    pub fn new(gen: BlockGenerator) -> Self {
+        Self {
+            block_generator: gen,
         }
-        let contents = contents.unwrap();
-
-        let mut new_block = blk_gen.generate();
-        // Replacing dollar sign to avoid Regex issues
-        new_block = blk_gen.wrap(&new_block, &tags).replace("$", "$$");
-
-        Some(
-            Self::get_block_re(&config.comment, &tags)
-                .replacen(&contents, 1, new_block)
-                .to_string(),
-        )
     }
 
-    fn get_file_contents(&self, conf: &BlockConfig, tags: &(String, String)) -> Result<String, ()> {
-        let contents = match fs::read_to_string(expand_tilde(&conf.path)) {
-            Ok(f) => f,
-            Err(e) => {
-                log::error!("Error reading `{}`:\n{e}", conf.path);
-                return Err(());
+    pub fn read_file(&self, path: &String) -> Result<String, UpdatesError> {
+        match fs::read_to_string(expand_tilde(&path)) {
+            Ok(f) => Ok(f),
+            Err(_) => {
+                return Err(UpdatesError::UnableToRead);
             }
-        };
-
-        let themer_block_re = Self::get_block_re(&conf.comment, tags);
-        if !themer_block_re.is_match(&contents) {
-            log::warn!(
-                "Failed to find THEMER block inside of `{}`. Skipping it.",
-                conf.path
-            );
-            return Err(());
         }
-
-        Ok(contents)
     }
 
-    pub fn get_block_re(comment: &String, (start, end): &(String, String)) -> Regex {
-        log::debug!("Generate regex for block `{comment} {start} ... {comment} {end}");
+    pub fn validate_block(&self, contents: &String) -> Result<(), UpdatesError> {
+        if !self.block_generator.get_re().is_match(contents) {
+            return Err(UpdatesError::NoBlock);
+        }
 
-        RegexBuilder::new(&format!("{0} {start}\n.*{0} {end}", comment))
-            .dot_matches_new_line(true)
-            .build()
-            .unwrap()
+        Ok(())
+    }
+
+    pub fn generate(
+        &mut self,
+        config: &BlockConfig,
+        tag: &Option<String>,
+    ) -> Result<String, UpdatesError> {
+        self.block_generator.set_tag(tag.clone());
+
+        let contents = self.read_file(&config.path)?;
+
+        self.validate_block(&contents)?;
+
+        let mut update = self.block_generator.generate();
+        // Replacing dollar sign to avoid Regex issues
+        update = self.block_generator.wrap(&update).replace("$", "$$");
+
+        Ok(self
+            .block_generator
+            .get_re()
+            .replacen(&contents, 1, update)
+            .to_string())
     }
 }

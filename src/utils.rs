@@ -5,8 +5,8 @@ use crate::config::FileConfig;
 use crate::config::TaggedConfig;
 use crate::updates::UpdatesGenerator;
 use colored::Colorize;
+use std::collections::BTreeMap;
 use std::env;
-use std::fs;
 
 pub fn expand_tilde(p: &String) -> String {
     let mut new = p.clone();
@@ -21,20 +21,29 @@ pub fn expand_tilde(p: &String) -> String {
 pub fn list_files(config: Config, check: bool) {
     println!("{}", "Listed configuration files:".purple());
 
+    let vars = BTreeMap::new();
+    let block_gen = BlockGenerator::new(
+        String::new(),
+        &vars,
+        FileConfig::Single(BlockConfig::default()),
+    );
+    let mut updates = UpdatesGenerator::new(block_gen);
+
     config
         .files
         .into_iter()
         .for_each(|(name, config)| match config {
             FileConfig::Multi(multi) => {
-                list_mutli(name, multi, check);
+                list_mutli(name, multi, &mut updates, check);
             }
             FileConfig::Single(single) => {
-                println!("{}", list_block(name, single, None, check));
+                updates.block_generator.config = single;
+                println!("{}", list_block(name, &mut updates, check));
             }
         });
 }
 
-fn list_mutli(name: String, multi: TaggedConfig, check: bool) {
+fn list_mutli(name: String, multi: TaggedConfig, updates: &mut UpdatesGenerator, check: bool) {
     println!("{} ({}) [Multiple blocks]: ", name.blue(), multi.path);
 
     multi.blocks.iter().for_each(|(tag, config)| {
@@ -43,45 +52,49 @@ fn list_mutli(name: String, multi: TaggedConfig, check: bool) {
             comment: multi.comment.clone(),
             block: config.clone(),
         };
-        let out = list_block(tag.clone(), config, Some(tag.clone()), check);
+
+        updates.block_generator.config = config;
+        updates.block_generator.set_tag(Some(tag.clone()));
+
+        let out = list_block(tag.clone(), updates, check);
+
+        updates.block_generator.set_tag(None);
         println!("  {out}");
     });
 }
 
-fn list_block(name: String, config: BlockConfig, tag: Option<String>, check: bool) -> String {
+fn list_block(name: String, updates: &mut UpdatesGenerator, check: bool) -> String {
     // Do not show path if it's a tagged block
-    let display_path = if tag.is_some() {
+    let display_path = if updates.block_generator.get_tag().is_some() {
         String::new()
     } else {
         let mut dp = String::from("(");
-        dp.push_str(&config.path);
+        dp.push_str(&updates.block_generator.config.path);
         dp.push(')');
 
         dp
     };
 
     if check {
-        let valid: Result<(), &'static str> = match fs::read_to_string(expand_tilde(&config.path)) {
-            Err(_) => Err("Failed to read file."),
-            Ok(v) => {
-                let re = UpdatesGenerator::get_block_re(
-                    &config.comment,
-                    &BlockGenerator::get_block_tags(&tag),
-                );
-                match re.is_match(&v) {
-                    true => Ok(()),
-                    false => Err("No THEMER block found."),
-                }
+        let mut err: Option<&'static str> = None;
+
+        if let Ok(c) = updates.read_file(&updates.block_generator.config.path) {
+            if updates.validate_block(&c).is_err() {
+                err = Some("No valid block found");
             }
-        };
-        let mut status = "ok".green();
-        let mut err = String::new();
-        if let Err(e) = valid {
-            status = "err".red();
-            err = format!("[{}]", e.to_string().red());
+        } else {
+            err = Some("Failed to read file");
         }
 
-        return format!("{status} {} {} {err}", name, display_path);
+        let mut status = "ok".green();
+        let mut err_msg = String::new();
+
+        if let Some(e) = err {
+            status = "err".red();
+            err_msg = format!("[{}]", e.to_string().red());
+        }
+
+        return format!("{status} {} {} {err_msg}", name, display_path);
     }
     format!("- {} {}", name, display_path)
 }

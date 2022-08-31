@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 
 pub type ThemeVars = BTreeMap<String, String>;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct BlockConfig {
     pub path: String,
     #[serde(default = "default_comment")]
@@ -20,7 +20,7 @@ pub struct TaggedConfig {
     pub blocks: BTreeMap<String, BlockOptions>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct BlockOptions {
     #[serde(default)]
     pub only: Vec<String>,
