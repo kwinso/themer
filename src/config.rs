@@ -8,6 +8,10 @@ pub struct BlockConfig {
     pub path: String,
     #[serde(default = "default_comment")]
     pub comment: String,
+
+    #[serde(skip)]
+    pub tag: Option<String>,
+
     #[serde(flatten)]
     pub block: BlockOptions,
 }
@@ -46,6 +50,25 @@ fn default_format() -> String {
 pub enum FileConfig {
     Multi(TaggedConfig),
     Single(BlockConfig),
+}
+
+impl FileConfig {
+    pub fn to_blocks(&self) -> Vec<BlockConfig> {
+        match self {
+            FileConfig::Single(v) => vec![v.clone()],
+            FileConfig::Multi(mutli) => mutli
+                .clone()
+                .blocks
+                .into_iter()
+                .map(|(tag, block)| BlockConfig {
+                    tag: Some(tag),
+                    path: mutli.path.clone(),
+                    comment: mutli.comment.clone(),
+                    block,
+                })
+                .collect(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

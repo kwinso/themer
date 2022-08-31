@@ -48,24 +48,22 @@ fn list_mutli(name: String, multi: TaggedConfig, updates: &mut UpdatesGenerator,
 
     multi.blocks.iter().for_each(|(tag, config)| {
         let config = BlockConfig {
+            tag: Some(tag.to_string()),
             path: multi.path.clone(),
             comment: multi.comment.clone(),
             block: config.clone(),
         };
 
         updates.block_generator.config = config;
-        updates.block_generator.set_tag(Some(tag.clone()));
-
         let out = list_block(tag.clone(), updates, check);
 
-        updates.block_generator.set_tag(None);
         println!("  {out}");
     });
 }
 
 fn list_block(name: String, updates: &mut UpdatesGenerator, check: bool) -> String {
     // Do not show path if it's a tagged block
-    let display_path = if updates.block_generator.get_tag().is_some() {
+    let display_path = if updates.block_generator.config.tag.is_some() {
         String::new()
     } else {
         let mut dp = String::from("(");

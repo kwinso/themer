@@ -15,7 +15,6 @@ use std::{
 pub struct BlockGenerator {
     vars: ThemeVars,
     theme_name: String,
-    tag: Option<String>,
     pub config: BlockConfig,
 }
 
@@ -26,7 +25,6 @@ impl BlockGenerator {
                 theme_name,
                 vars: Self::apply_aliases(vars, &c.block.aliases),
                 config: c,
-                tag: None,
             },
             FileConfig::Multi(_) => {
                 log::error!("Tried to create block generator from MultiBlock file config");
@@ -35,13 +33,13 @@ impl BlockGenerator {
         }
     }
 
-    pub fn set_tag(&mut self, tag: Option<String>) {
-        self.tag = tag;
-    }
+    // pub fn set_tag(&mut self, tag: Option<String>) {
+    //     self.tag = tag;
+    // }
 
-    pub fn get_tag(&self) -> Option<String> {
-        self.tag.clone()
-    }
+    // pub fn get_tag(&self) -> Option<String> {
+    //     self.tag.clone()
+    // }
 
     fn apply_aliases(vars: &ThemeVars, aliases: &Option<ThemeVars>) -> ThemeVars {
         let mut theme = vars.clone();
@@ -83,7 +81,7 @@ impl BlockGenerator {
 
     pub fn get_tags(&self) -> (String, String) {
         let mut block_name = String::from("THEMER");
-        if let Some(tag) = &self.tag {
+        if let Some(tag) = &self.config.tag {
             block_name.push(':');
             block_name.push_str(tag);
         }
@@ -237,7 +235,7 @@ impl BlockGenerator {
 #[cfg(test)]
 mod tests {
     use super::BlockGenerator;
-    use crate::config::{Config, FileConfig, ThemeVars};
+    use crate::config::{BlockConfig, Config, FileConfig, ThemeVars};
     use std::fs;
 
     fn load_config(file: &'static str) -> (ThemeVars, FileConfig) {
@@ -326,5 +324,33 @@ set foreground as {}"#,
         let res = BlockGenerator::new("theme".to_string(), &theme, conf).generate();
 
         assert_eq!(res, "bg = #000000\nfg = #ffffff");
+    }
+
+    #[test]
+    fn tags() {
+        let (theme, conf) = load_config("tags");
+        let blocks = conf.to_blocks();
+        println!("{blocks:#?}");
+        let one = blocks[0].clone();
+        let two = blocks[1].clone();
+
+        let mut blk = BlockGenerator::new("theme".to_string(), &theme, FileConfig::Single(one));
+        let out = blk.wrap(&blk.generate());
+        assert_eq!(
+            r#"// THEMER:one
+content inside first block
+// THEMER_END:one"#,
+            out
+        );
+
+        blk.config = two;
+        let out = blk.wrap(&blk.generate());
+        assert_eq!(
+            r#"// THEMER:two
+theme = theme
+$background #000000
+// THEMER_END:two"#,
+            out
+        );
     }
 }

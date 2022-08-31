@@ -27,30 +27,15 @@ pub fn run(theme_name: String, config: &Config) {
     let mut update_gen = UpdatesGenerator::new(block_gen);
 
     for (_, conf) in &config.files {
-        let mut tag = None;
-        match conf {
-            FileConfig::Single(config) => {
-                let results = update_gen.generate(config, &tag);
-                print_err(results, &None, &config.path);
-            }
-            FileConfig::Multi(mutli) => {
-                mutli.clone().blocks.into_iter().for_each(|(t, c)| {
-                    let config = BlockConfig {
-                        path: mutli.path.clone(),
-                        comment: mutli.comment.clone(),
-                        block: c,
-                    };
-
-                    tag = Some(t);
-                    let results = update_gen.generate(&config, &tag);
-                    print_err(results, &tag, &mutli.path);
-                });
-            }
+        for block in conf.to_blocks() {
+            let results = update_gen.generate(&block);
+            print_err(results, &block);
         }
     }
 }
 
-fn print_err(results: Result<String, UpdatesError>, tag: &Option<String>, path: &String) {
+fn print_err(results: Result<String, UpdatesError>, block: &BlockConfig) {
+    let path = &block.path;
     match results {
         Ok(s) => fs::write(expand_tilde(&path), s.as_bytes()).unwrap(),
         Err(e) => match e {
@@ -58,7 +43,7 @@ fn print_err(results: Result<String, UpdatesError>, tag: &Option<String>, path: 
                 println!("Hello");
                 log::error!(
                     "Failed to find Themer block (tag: {}) inside {path}",
-                    tag.clone().unwrap_or("No tag".to_string())
+                    block.tag.clone().unwrap_or("No tag".to_string())
                 )
             }
             UpdatesError::UnableToRead => log::error!("Failed to read file {path}"),
@@ -100,13 +85,8 @@ impl UpdatesGenerator {
         Ok(())
     }
 
-    pub fn generate(
-        &mut self,
-        config: &BlockConfig,
-        tag: &Option<String>,
-    ) -> Result<String, UpdatesError> {
+    pub fn generate(&mut self, config: &BlockConfig) -> Result<String, UpdatesError> {
         self.block_generator.config = config.clone();
-        self.block_generator.set_tag(tag.clone());
 
         let contents = self.read_file(&config.path)?;
         self.validate_block(&contents)?;
