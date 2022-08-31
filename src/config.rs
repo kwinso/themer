@@ -8,6 +8,7 @@ pub struct BlockConfig {
     pub path: String,
     #[serde(default = "default_comment")]
     pub comment: String,
+    pub closing_comment: Option<String>,
 
     #[serde(skip)]
     pub tag: Option<String>,
@@ -21,6 +22,7 @@ pub struct TaggedConfig {
     pub path: String,
     #[serde(default = "default_comment")]
     pub comment: String,
+    pub comment_end: Option<String>,
     pub blocks: BTreeMap<String, BlockOptions>,
 }
 
@@ -64,6 +66,7 @@ impl FileConfig {
                     tag: Some(tag),
                     path: mutli.path.clone(),
                     comment: mutli.comment.clone(),
+                    closing_comment: mutli.comment_end.clone(),
                     block,
                 })
                 .collect(),

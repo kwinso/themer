@@ -52,3 +52,7 @@ files:
         custom: |
           theme = <name>
           <vars>
+  closing:
+    path: "/"
+    comment: "/*"
+    closing_comment: "*/"

@@ -33,14 +33,6 @@ impl BlockGenerator {
         }
     }
 
-    // pub fn set_tag(&mut self, tag: Option<String>) {
-    //     self.tag = tag;
-    // }
-
-    // pub fn get_tag(&self) -> Option<String> {
-    //     self.tag.clone()
-    // }
-
     fn apply_aliases(vars: &ThemeVars, aliases: &Option<ThemeVars>) -> ThemeVars {
         let mut theme = vars.clone();
 
@@ -66,10 +58,14 @@ impl BlockGenerator {
             self.config.comment
         );
 
-        RegexBuilder::new(&format!("{0} {start}\n.*{0} {end}", self.config.comment))
-            .dot_matches_new_line(true)
-            .build()
-            .unwrap()
+        RegexBuilder::new(&format!(
+            "{0} {start}[ \t]*{1}\n.*{0} {end}[ \t]*{1}",
+            regex::escape(&self.config.comment),
+            regex::escape(&self.config.closing_comment.clone().unwrap_or_default())
+        ))
+        .dot_matches_new_line(true)
+        .build()
+        .unwrap()
     }
 
     pub fn generate(&self) -> String {
@@ -95,7 +91,18 @@ impl BlockGenerator {
     /// Wraps contents with appropriate comments that will identify Themer block
     pub fn wrap(&self, contents: &String) -> String {
         let (start, end) = self.get_tags();
-        format!("{0} {start}\n{contents}\n{0} {end}", &self.config.comment)
+
+        let mut closing = self.config.closing_comment.clone().unwrap_or_default();
+
+        // Separate block tag and closing comment with space
+        if !closing.is_empty() {
+            closing.insert(0, ' ');
+        }
+
+        format!(
+            "{0} {start}{1}\n{contents}\n{0} {end}{1}",
+            &self.config.comment, closing
+        )
     }
 
     fn default_block(&self) -> String {
@@ -324,6 +331,20 @@ set foreground as {}"#,
         let res = BlockGenerator::new("theme".to_string(), &theme, conf).generate();
 
         assert_eq!(res, "bg = #000000\nfg = #ffffff");
+    }
+
+    #[test]
+    fn closing_comment() {
+        let (theme, conf) = load_config("closing");
+        let blk = BlockGenerator::new("theme".to_string(), &theme, conf);
+
+        assert_eq!(
+            blk.wrap(&blk.generate()),
+            r#"/* THEMER */
+background = #000000
+foreground = #ffffff
+/* THEMER_END */"#
+        );
     }
 
     #[test]
