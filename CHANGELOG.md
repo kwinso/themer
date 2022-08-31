@@ -1,4 +1,11 @@
-# TODO
+# 1.3.0
+- [X] Multiple themer blocks inside single file
+- [ ] `comment_end` variable to support comments like `/* comment */`
+
+# 1.2.1
+- [X] Do not exit after an error when applying changes
+
+# 1.2.0 
 - [X] Cover everything with tests 
   - [X] Getting custom block vars 
   - [X] Var formatting 

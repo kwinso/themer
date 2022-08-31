@@ -40,3 +40,19 @@ files:
       bg: background
       fg: foreground
 
+  tags:
+    path: "/"
+    comment: "//"
+    blocks:
+      one:
+        custom: "content inside first block"
+      two: 
+        format: "$<key> <value>"
+        ignore: ["foreground"]
+        custom: |
+          theme = <name>
+          <vars>
+  closing:
+    path: "/"
+    comment: "/*"
+    closing_comment: "*/"

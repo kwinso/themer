@@ -3,12 +3,31 @@ use std::collections::BTreeMap;
 
 pub type ThemeVars = BTreeMap<String, String>;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct FileConfig {
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct BlockConfig {
     pub path: String,
     #[serde(default = "default_comment")]
     pub comment: String,
+    pub closing_comment: Option<String>,
 
+    #[serde(skip)]
+    pub tag: Option<String>,
+
+    #[serde(flatten)]
+    pub block: BlockOptions,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TaggedConfig {
+    pub path: String,
+    #[serde(default = "default_comment")]
+    pub comment: String,
+    pub comment_end: Option<String>,
+    pub blocks: BTreeMap<String, BlockOptions>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct BlockOptions {
     #[serde(default)]
     pub only: Vec<String>,
     #[serde(default)]
@@ -26,6 +45,33 @@ fn default_comment() -> String {
 }
 fn default_format() -> String {
     "<key> = <value>".to_owned()
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum FileConfig {
+    Multi(TaggedConfig),
+    Single(BlockConfig),
+}
+
+impl FileConfig {
+    pub fn to_blocks(&self) -> Vec<BlockConfig> {
+        match self {
+            FileConfig::Single(v) => vec![v.clone()],
+            FileConfig::Multi(mutli) => mutli
+                .clone()
+                .blocks
+                .into_iter()
+                .map(|(tag, block)| BlockConfig {
+                    tag: Some(tag),
+                    path: mutli.path.clone(),
+                    comment: mutli.comment.clone(),
+                    closing_comment: mutli.comment_end.clone(),
+                    block,
+                })
+                .collect(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

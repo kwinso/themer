@@ -1,10 +1,10 @@
 use crate::{
-    config::{FileConfig, ThemeVars},
+    config::{BlockConfig, FileConfig, ThemeVars},
     utils::expand_tilde,
 };
 use colored::Colorize;
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use std::{
     collections::{hash_set::IntoIter, HashSet},
     fs,
@@ -13,22 +13,28 @@ use std::{
 };
 
 pub struct BlockGenerator {
+    vars: ThemeVars,
     theme_name: String,
-    theme: ThemeVars,
-    config: FileConfig,
+    pub config: BlockConfig,
 }
 
 impl BlockGenerator {
-    pub fn new(theme_name: &String, theme: &ThemeVars, config: &FileConfig) -> Self {
-        Self {
-            theme: Self::apply_aliases(theme, &config.aliases),
-            theme_name: theme_name.clone(),
-            config: config.clone(),
+    pub fn new(theme_name: String, vars: &ThemeVars, config: FileConfig) -> Self {
+        match config {
+            FileConfig::Single(c) => Self {
+                theme_name,
+                vars: Self::apply_aliases(vars, &c.block.aliases),
+                config: c,
+            },
+            FileConfig::Multi(_) => {
+                log::error!("Tried to create block generator from MultiBlock file config");
+                exit(1);
+            }
         }
     }
 
-    fn apply_aliases(theme: &ThemeVars, aliases: &Option<ThemeVars>) -> ThemeVars {
-        let mut theme = theme.clone();
+    fn apply_aliases(vars: &ThemeVars, aliases: &Option<ThemeVars>) -> ThemeVars {
+        let mut theme = vars.clone();
 
         if let Some(aliases) = aliases {
             for (new_key, old_key) in aliases {
@@ -45,18 +51,57 @@ impl BlockGenerator {
         theme
     }
 
+    pub fn get_re(&self) -> Regex {
+        let (start, end) = self.get_tags();
+        log::debug!(
+            "Generate regex for block `{0} {start} ... {0} {end}",
+            self.config.comment
+        );
+
+        RegexBuilder::new(&format!(
+            "{0} {start}[ \t]*{1}\n.*{0} {end}[ \t]*{1}",
+            regex::escape(&self.config.comment),
+            regex::escape(&self.config.closing_comment.clone().unwrap_or_default())
+        ))
+        .dot_matches_new_line(true)
+        .build()
+        .unwrap()
+    }
+
     pub fn generate(&self) -> String {
-        match &self.config.custom {
+        match &self.config.block.custom {
             Some(custom) => self.custom_block(custom.to_owned(), 0),
             None => self.default_block(),
         }
     }
 
+    pub fn get_tags(&self) -> (String, String) {
+        let mut block_name = String::from("THEMER");
+        if let Some(tag) = &self.config.tag {
+            block_name.push(':');
+            block_name.push_str(tag);
+        }
+        let mut end_name = block_name.clone();
+        // 5 is the length of the word "THEMeR", after which we should put "_END" so it becomes
+        // "THEMER_END"
+        end_name.insert_str(6, "_END");
+
+        (block_name, end_name)
+    }
     /// Wraps contents with appropriate comments that will identify Themer block
     pub fn wrap(&self, contents: &String) -> String {
+        let (start, end) = self.get_tags();
+
+        let mut closing = self.config.closing_comment.clone().unwrap_or_default();
+
+        // Separate block tag and closing comment with space
+        if !closing.is_empty() {
+            closing.insert(0, ' ');
+        }
+
         format!(
-            "{0} THEMER\n{contents}\n{0} THEMER_END",
-            &self.config.comment
+            "{0} {start}{1}\n{contents}\n{0} {end}{1}",
+            &self.config.comment, closing
         )
     }
 
@@ -66,15 +111,15 @@ impl BlockGenerator {
         let mut filter_closure: Option<Box<dyn FnMut(&(String, String)) -> bool>> = None;
 
         // `only` has more "power" than `ignore`, so here we decide how to filter variables
-        if !self.config.only.is_empty() {
-            filter_closure = Some(Box::new(|x| self.config.only.contains(&x.0)));
-        } else if !self.config.ignore.is_empty() {
-            filter_closure = Some(Box::new(|x| !self.config.ignore.contains(&x.0)));
+        if !self.config.block.only.is_empty() {
+            filter_closure = Some(Box::new(|x| self.config.block.only.contains(&x.0)));
+        } else if !self.config.block.ignore.is_empty() {
+            filter_closure = Some(Box::new(|x| !self.config.block.ignore.contains(&x.0)));
         }
 
         // Filters variables if needed, otherwise leaving everything as it was
         let vars = self
-            .theme
+            .vars
             .clone()
             .into_iter()
             .filter(filter_closure.unwrap_or(Box::new(|_| true)));
@@ -83,6 +128,7 @@ impl BlockGenerator {
             block.push_str(
                 &self
                     .config
+                    .block
                     .format
                     .clone()
                     .replace("<key>", &key)
@@ -110,7 +156,7 @@ impl BlockGenerator {
                 var => {
                     let var_name = var.replace("<", "").replace(">", "");
 
-                    if let Some(v) = self.theme.get(&var_name) {
+                    if let Some(v) = self.vars.get(&var_name) {
                         input = input.replace(var, v);
                     } else {
                         log::warn!(
@@ -214,7 +260,7 @@ mod tests {
     #[test]
     fn valid_themer_block() {
         let (theme, conf) = load_config("basic");
-        let gen = BlockGenerator::new(&"theme".to_string(), &theme, &conf);
+        let gen = BlockGenerator::new("theme".to_string(), &theme, conf);
 
         assert_eq!(
             gen.generate(),
@@ -226,7 +272,7 @@ mod tests {
     fn valid_custom_block() {
         let (theme, conf) = load_config("custom");
 
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new("theme".to_string(), &theme, conf).generate();
 
         let expected = format!(
             r#"# This is just a comment
@@ -244,7 +290,7 @@ set foreground as {}"#,
     fn valid_wrapper() {
         let (theme, conf) = load_config("custom");
 
-        let gen = BlockGenerator::new(&"theme".to_string(), &theme, &conf);
+        let gen = BlockGenerator::new("theme".to_string(), &theme, conf);
         let s = String::from("some string \n on newline");
         let res = gen.wrap(&s);
 
@@ -255,7 +301,7 @@ set foreground as {}"#,
     fn imports() {
         let (theme, conf) = load_config("imports");
 
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new("theme".to_string(), &theme, conf).generate();
 
         assert_eq!(
             res,
@@ -266,7 +312,7 @@ set foreground as {}"#,
     #[test]
     fn ignore() {
         let (theme, conf) = load_config("ignore");
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new("theme".to_string(), &theme, conf).generate();
 
         assert_eq!(res, "background = #000000");
     }
@@ -274,7 +320,7 @@ set foreground as {}"#,
     #[test]
     fn only() {
         let (theme, conf) = load_config("only");
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new("theme".to_string(), &theme, conf).generate();
 
         assert_eq!(res, "foreground = #ffffff");
     }
@@ -282,8 +328,50 @@ set foreground as {}"#,
     #[test]
     fn aliases() {
         let (theme, conf) = load_config("aliases");
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new("theme".to_string(), &theme, conf).generate();
 
         assert_eq!(res, "bg = #000000\nfg = #ffffff");
+    }
+
+    #[test]
+    fn closing_comment() {
+        let (theme, conf) = load_config("closing");
+        let blk = BlockGenerator::new("theme".to_string(), &theme, conf);
+
+        assert_eq!(
+            blk.wrap(&blk.generate()),
+            r#"/* THEMER */
+background = #000000
+foreground = #ffffff
+/* THEMER_END */"#
+        );
+    }
+
+    #[test]
+    fn tags() {
+        let (theme, conf) = load_config("tags");
+        let blocks = conf.to_blocks();
+        println!("{blocks:#?}");
+        let one = blocks[0].clone();
+        let two = blocks[1].clone();
+
+        let mut blk = BlockGenerator::new("theme".to_string(), &theme, FileConfig::Single(one));
+        let out = blk.wrap(&blk.generate());
+        assert_eq!(
+            r#"// THEMER:one
+content inside first block
+// THEMER_END:one"#,
+            out
+        );
+
+        blk.config = two;
+        let out = blk.wrap(&blk.generate());
+        assert_eq!(
+            r#"// THEMER:two
+theme = theme
+$background #000000
+// THEMER_END:two"#,
+            out
+        );
     }
 }
