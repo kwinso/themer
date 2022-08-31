@@ -3,7 +3,7 @@
 - [ ] `comment_end` variable to support comments like `/* comment */`
 
 # 1.2.1
-- [ ] Do not exit after an error when applying changes
+- [X] Do not exit after an error when applying changes
 
 # 1.2.0 
 - [X] Cover everything with tests 

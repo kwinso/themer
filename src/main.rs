@@ -58,35 +58,6 @@ fn setup_logger() {
     TermLogger::init(level, log_conf, TerminalMode::Mixed, ColorChoice::Auto).unwrap();
 }
 
-fn list_files(config: Config, check: bool) {
-    println!("{}", "Listed configuration files:".purple());
-    config.files.into_iter().for_each(|x| {
-        if check {
-            let valid: Result<(), &'static str> = match fs::read_to_string(expand_tilde(&x.1.path))
-            {
-                Err(_) => Err("Failed to read file."),
-                Ok(v) => {
-                    let re = updates::UpdatesGenerator::get_block_re(&x.1.comment);
-                    match re.is_match(&v) {
-                        true => Ok(()),
-                        false => Err("No THEMER block found."),
-                    }
-                }
-            };
-            let mut status = "ok".green();
-            let mut err = String::new();
-            if let Err(e) = valid {
-                status = "err".red();
-                err = format!("[{}]", e.to_string().red());
-            }
-
-            println!("  {status} {} ({}) {err}", x.0, x.1.path);
-            return;
-        }
-        println!("  - {} ({})", x.0, x.1.path);
-    });
-}
-
 fn main() {
     setup_logger();
 
@@ -123,7 +94,7 @@ fn main() {
                 .for_each(|x| println!("  - {}", x.0));
         }
         Commands::Files { check } => {
-            list_files(config, check);
+            utils::list_files(config, check);
         }
         Commands::Set { theme } => {
             updates::run(theme, &config);

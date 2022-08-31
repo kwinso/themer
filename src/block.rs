@@ -1,5 +1,5 @@
 use crate::{
-    config::{FileConfig, ThemeVars},
+    config::{BlockConfig, FileConfig, ThemeVars},
     utils::expand_tilde,
 };
 use colored::Colorize;
@@ -15,15 +15,21 @@ use std::{
 pub struct BlockGenerator {
     theme_name: String,
     theme: ThemeVars,
-    config: FileConfig,
+    config: BlockConfig,
 }
 
 impl BlockGenerator {
-    pub fn new(theme_name: &String, theme: &ThemeVars, config: &FileConfig) -> Self {
-        Self {
-            theme: Self::apply_aliases(theme, &config.aliases),
-            theme_name: theme_name.clone(),
-            config: config.clone(),
+    pub fn new(theme_name: &String, theme: &ThemeVars, config: FileConfig) -> Self {
+        match config {
+            FileConfig::Single(c) => Self {
+                theme: Self::apply_aliases(theme, &c.block.aliases),
+                theme_name: theme_name.clone(),
+                config: c,
+            },
+            FileConfig::Multi(_) => {
+                log::error!("Tried to create block generator from MultiBlock file config");
+                exit(1);
+            }
         }
     }
 
@@ -46,18 +52,28 @@ impl BlockGenerator {
     }
 
     pub fn generate(&self) -> String {
-        match &self.config.custom {
+        match &self.config.block.custom {
             Some(custom) => self.custom_block(custom.to_owned(), 0),
             None => self.default_block(),
         }
     }
 
+    pub fn get_block_tags(tag: &Option<String>) -> (String, String) {
+        let mut block_name = String::from("THEMER");
+        if let Some(tag) = tag {
+            block_name.push(':');
+            block_name.push_str(tag);
+        }
+        let mut end_name = block_name.clone();
+        // 5 is the length of the word "THEMeR", after which we should put "_END" so it becomes
+        // "THEMER_END"
+        end_name.insert_str(6, "_END");
+
+        (block_name, end_name)
+    }
     /// Wraps contents with appropriate comments that will identify Themer block
-    pub fn wrap(&self, contents: &String) -> String {
-        format!(
-            "{0} THEMER\n{contents}\n{0} THEMER_END",
-            &self.config.comment
-        )
+    pub fn wrap(&self, contents: &String, (start, end): &(String, String)) -> String {
+        format!("{0} {start}\n{contents}\n{0} {end}", &self.config.comment)
     }
 
     fn default_block(&self) -> String {
@@ -66,10 +82,10 @@ impl BlockGenerator {
         let mut filter_closure: Option<Box<dyn FnMut(&(String, String)) -> bool>> = None;
 
         // `only` has more "power" than `ignore`, so here we decide how to filter variables
-        if !self.config.only.is_empty() {
-            filter_closure = Some(Box::new(|x| self.config.only.contains(&x.0)));
-        } else if !self.config.ignore.is_empty() {
-            filter_closure = Some(Box::new(|x| !self.config.ignore.contains(&x.0)));
+        if !self.config.block.only.is_empty() {
+            filter_closure = Some(Box::new(|x| self.config.block.only.contains(&x.0)));
+        } else if !self.config.block.ignore.is_empty() {
+            filter_closure = Some(Box::new(|x| !self.config.block.ignore.contains(&x.0)));
         }
 
         // Filters variables if needed, otherwise leaving everything as it was
@@ -83,6 +99,7 @@ impl BlockGenerator {
             block.push_str(
                 &self
                     .config
+                    .block
                     .format
                     .clone()
                     .replace("<key>", &key)
@@ -214,7 +231,7 @@ mod tests {
     #[test]
     fn valid_themer_block() {
         let (theme, conf) = load_config("basic");
-        let gen = BlockGenerator::new(&"theme".to_string(), &theme, &conf);
+        let gen = BlockGenerator::new(&"theme".to_string(), &theme, conf);
 
         assert_eq!(
             gen.generate(),
@@ -226,7 +243,7 @@ mod tests {
     fn valid_custom_block() {
         let (theme, conf) = load_config("custom");
 
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new(&"theme".to_string(), &theme, conf).generate();
 
         let expected = format!(
             r#"# This is just a comment
@@ -244,9 +261,9 @@ set foreground as {}"#,
     fn valid_wrapper() {
         let (theme, conf) = load_config("custom");
 
-        let gen = BlockGenerator::new(&"theme".to_string(), &theme, &conf);
+        let gen = BlockGenerator::new(&"theme".to_string(), &theme, conf);
         let s = String::from("some string \n on newline");
-        let res = gen.wrap(&s);
+        let res = gen.wrap(&s, &BlockGenerator::get_block_tags(&None));
 
         assert_eq!(res, format!("# THEMER\n{s}\n# THEMER_END"));
     }
@@ -255,7 +272,7 @@ set foreground as {}"#,
     fn imports() {
         let (theme, conf) = load_config("imports");
 
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new(&"theme".to_string(), &theme, conf).generate();
 
         assert_eq!(
             res,
@@ -266,7 +283,7 @@ set foreground as {}"#,
     #[test]
     fn ignore() {
         let (theme, conf) = load_config("ignore");
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new(&"theme".to_string(), &theme, conf).generate();
 
         assert_eq!(res, "background = #000000");
     }
@@ -274,7 +291,7 @@ set foreground as {}"#,
     #[test]
     fn only() {
         let (theme, conf) = load_config("only");
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new(&"theme".to_string(), &theme, conf).generate();
 
         assert_eq!(res, "foreground = #ffffff");
     }
@@ -282,7 +299,7 @@ set foreground as {}"#,
     #[test]
     fn aliases() {
         let (theme, conf) = load_config("aliases");
-        let res = BlockGenerator::new(&"theme".to_string(), &theme, &conf).generate();
+        let res = BlockGenerator::new(&"theme".to_string(), &theme, conf).generate();
 
         assert_eq!(res, "bg = #000000\nfg = #ffffff");
     }

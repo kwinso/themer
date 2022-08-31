@@ -4,11 +4,24 @@ use std::collections::BTreeMap;
 pub type ThemeVars = BTreeMap<String, String>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct FileConfig {
+pub struct BlockConfig {
     pub path: String,
     #[serde(default = "default_comment")]
     pub comment: String,
+    #[serde(flatten)]
+    pub block: BlockOptions,
+}
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TaggedConfig {
+    pub path: String,
+    #[serde(default = "default_comment")]
+    pub comment: String,
+    pub blocks: BTreeMap<String, BlockOptions>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BlockOptions {
     #[serde(default)]
     pub only: Vec<String>,
     #[serde(default)]
@@ -26,6 +39,13 @@ fn default_comment() -> String {
 }
 fn default_format() -> String {
     "<key> = <value>".to_owned()
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum FileConfig {
+    Multi(TaggedConfig),
+    Single(BlockConfig),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
