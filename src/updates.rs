@@ -99,6 +99,7 @@ impl UpdatesGenerator {
         config: &BlockConfig,
         tag: &Option<String>,
     ) -> Result<String, UpdatesError> {
+        self.block_generator.config = config.clone();
         self.block_generator.set_tag(tag.clone());
 
         let contents = self.read_file(&config.path)?;
