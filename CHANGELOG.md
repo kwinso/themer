@@ -1,5 +1,5 @@
 # 1.3.0
-- [ ] Multiple themer blocks inside single file
+- [X] Multiple themer blocks inside single file
 - [ ] `comment_end` variable to support comments like `/* comment */`
 
 # 1.2.1
