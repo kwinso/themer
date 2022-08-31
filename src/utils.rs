@@ -19,7 +19,7 @@ pub fn expand_tilde(p: &String) -> String {
 }
 
 pub fn list_files(config: Config, check: bool) {
-    println!("{}", "Listed configuration files:".purple());
+    println!("{}", "Listed configuration files:\n".purple());
 
     let vars = BTreeMap::new();
     let block_gen = BlockGenerator::new(
