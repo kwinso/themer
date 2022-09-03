@@ -28,7 +28,6 @@ pub fn run(theme_name: String, config: &Config) {
 
     for (_, conf) in &config.files {
         let update = update_gen.generate(&conf);
-        log::debug!("{update:#?}");
         write_results(update, &conf);
     }
 }
@@ -98,9 +97,6 @@ impl UpdatesGenerator {
         Ok(contents)
     }
 
-    // TODO 1: Create function that allows to pass TaggaedConfig and managas single string of contents instead of reading & writing every block
-    // TODO 2: Create a function for BlockConfig only
-    // TODO 3: Generate function should only accept BlockConfig, contents string and return updated string
     fn update_block(
         &mut self,
         contents: &mut String,
@@ -112,7 +108,6 @@ impl UpdatesGenerator {
         let mut update = self.block_generator.generate();
         // Replacing dollar sign to avoid Regex issues
         update = self.block_generator.wrap(&update).replace("$", "$$");
-        log::debug!("{update}");
 
         Ok(self
             .block_generator

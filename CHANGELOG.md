@@ -1,5 +1,5 @@
 # 1.3.1
-- [X] Improved speed: writing to file only once when using multiple blocks mode
+- [X] Optimized `set` subcommand speed: writing to file only once when using multiple blocks mode
 
 # 1.3.0
 - [X] Multiple themer blocks inside single file
