@@ -1,6 +1,6 @@
 use crate::{
     block::BlockGenerator,
-    config::{BlockConfig, Config, FileConfig, TaggedConfig},
+    config::{BlockConfig, Config, FileConfig},
     utils::expand_tilde,
 };
 use colored::Colorize;
