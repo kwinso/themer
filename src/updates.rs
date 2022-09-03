@@ -1,6 +1,6 @@
 use crate::{
     block::BlockGenerator,
-    config::{BlockConfig, Config, FileConfig},
+    config::{BlockConfig, Config, FileConfig, TaggedConfig},
     utils::expand_tilde,
 };
 use colored::Colorize;
@@ -27,38 +27,33 @@ pub fn run(theme_name: String, config: &Config) {
     let mut update_gen = UpdatesGenerator::new(block_gen);
 
     for (_, conf) in &config.files {
-        for block in conf.to_blocks() {
-            let results = update_gen.generate(&block);
-            print_err(results, &block);
-        }
+        let update = update_gen.generate(&conf);
+        log::debug!("{update:#?}");
+        write_results(update, &conf);
     }
 }
 
-fn print_err(results: Result<String, UpdatesError>, block: &BlockConfig) {
-    let path = &block.path;
+fn write_results(results: Result<String, UpdatesError>, conf: &FileConfig) {
+    let path = &conf.get_path();
     match results {
         Ok(s) => fs::write(expand_tilde(&path), s.as_bytes()).unwrap(),
         Err(e) => match e {
-            UpdatesError::InvalidBlock => {
-                println!("Hello");
-                log::error!(
-                    "Failed to find Themer block (tag: {}) inside {path}",
-                    block.tag.clone().unwrap_or("No tag".to_string())
-                )
+            UpdatesError::InvalidBlock(message) => {
+                log::error!("{message}")
             }
             UpdatesError::UnableToRead => log::error!("Failed to read file {path}"),
         },
     }
 }
 
-pub struct UpdatesGenerator {
-    pub block_generator: BlockGenerator,
-}
-
 #[derive(Debug)]
 pub enum UpdatesError {
     UnableToRead,
-    InvalidBlock,
+    InvalidBlock(String),
+}
+
+pub struct UpdatesGenerator {
+    pub block_generator: BlockGenerator,
 }
 
 impl UpdatesGenerator {
@@ -79,21 +74,45 @@ impl UpdatesGenerator {
 
     pub fn validate_block(&self, contents: &String) -> Result<(), UpdatesError> {
         if !self.block_generator.get_re().is_match(contents) {
-            return Err(UpdatesError::InvalidBlock);
+            let msg = format!(
+                "No Themer block with tag '{}'",
+                self.block_generator
+                    .config
+                    .tag
+                    .clone()
+                    .unwrap_or(String::from("No Tag"))
+            );
+            return Err(UpdatesError::InvalidBlock(msg));
         }
 
         Ok(())
     }
 
-    pub fn generate(&mut self, config: &BlockConfig) -> Result<String, UpdatesError> {
-        self.block_generator.config = config.clone();
+    pub fn generate(&mut self, config: &FileConfig) -> Result<String, UpdatesError> {
+        let mut contents = self.read_file(&config.get_path())?;
 
-        let contents = self.read_file(&config.path)?;
+        for block in config.flatten() {
+            contents = self.update_block(&mut contents, &block)?;
+        }
+
+        Ok(contents)
+    }
+
+    // TODO 1: Create function that allows to pass TaggaedConfig and managas single string of contents instead of reading & writing every block
+    // TODO 2: Create a function for BlockConfig only
+    // TODO 3: Generate function should only accept BlockConfig, contents string and return updated string
+    fn update_block(
+        &mut self,
+        contents: &mut String,
+        config: &BlockConfig,
+    ) -> Result<String, UpdatesError> {
+        self.block_generator.config = config.clone();
         self.validate_block(&contents)?;
 
         let mut update = self.block_generator.generate();
         // Replacing dollar sign to avoid Regex issues
         update = self.block_generator.wrap(&update).replace("$", "$$");
+        log::debug!("{update}");
 
         Ok(self
             .block_generator

@@ -22,7 +22,7 @@ pub struct TaggedConfig {
     pub path: String,
     #[serde(default = "default_comment")]
     pub comment: String,
-    pub comment_end: Option<String>,
+    pub closing_comment: Option<String>,
     pub blocks: BTreeMap<String, BlockOptions>,
 }
 
@@ -55,7 +55,13 @@ pub enum FileConfig {
 }
 
 impl FileConfig {
-    pub fn to_blocks(&self) -> Vec<BlockConfig> {
+    pub fn get_path(&self) -> String {
+        match self {
+            FileConfig::Single(v) => v.path.clone(),
+            FileConfig::Multi(v) => v.path.clone(),
+        }
+    }
+    pub fn flatten(&self) -> Vec<BlockConfig> {
         match self {
             FileConfig::Single(v) => vec![v.clone()],
             FileConfig::Multi(mutli) => mutli
@@ -66,7 +72,7 @@ impl FileConfig {
                     tag: Some(tag),
                     path: mutli.path.clone(),
                     comment: mutli.comment.clone(),
-                    closing_comment: mutli.comment_end.clone(),
+                    closing_comment: mutli.closing_comment.clone(),
                     block,
                 })
                 .collect(),

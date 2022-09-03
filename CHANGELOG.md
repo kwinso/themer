@@ -1,6 +1,9 @@
+# 1.3.1
+- [X] Improved speed: writing to file only once when using multiple blocks mode
+
 # 1.3.0
 - [X] Multiple themer blocks inside single file
-- [ ] `comment_end` variable to support comments like `/* comment */`
+- [X] `comment_end` variable to support comments like `/* comment */`
 
 # 1.2.1
 - [X] Do not exit after an error when applying changes

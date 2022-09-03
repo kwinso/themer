@@ -51,7 +51,7 @@ fn list_mutli(name: String, multi: TaggedConfig, updates: &mut UpdatesGenerator,
             tag: Some(tag.to_string()),
             path: multi.path.clone(),
             comment: multi.comment.clone(),
-            closing_comment: multi.comment_end.clone(),
+            closing_comment: multi.closing_comment.clone(),
             block: config.clone(),
         };
 

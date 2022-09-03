@@ -53,19 +53,18 @@ impl BlockGenerator {
 
     pub fn get_re(&self) -> Regex {
         let (start, end) = self.get_tags();
-        log::debug!(
-            "Generate regex for block `{0} {start} ... {0} {end}",
-            self.config.comment
-        );
 
-        RegexBuilder::new(&format!(
+        let regex_str = format!(
             "{0} {start}[ \t]*{1}\n.*{0} {end}[ \t]*{1}",
             regex::escape(&self.config.comment),
             regex::escape(&self.config.closing_comment.clone().unwrap_or_default())
-        ))
-        .dot_matches_new_line(true)
-        .build()
-        .unwrap()
+        );
+        log::debug!("Generated regex: {}", regex_str);
+
+        RegexBuilder::new(&regex_str)
+            .dot_matches_new_line(true)
+            .build()
+            .unwrap()
     }
 
     pub fn generate(&self) -> String {
@@ -350,7 +349,7 @@ foreground = #ffffff
     #[test]
     fn tags() {
         let (theme, conf) = load_config("tags");
-        let blocks = conf.to_blocks();
+        let blocks = conf.flatten();
         println!("{blocks:#?}");
         let one = blocks[0].clone();
         let two = blocks[1].clone();
