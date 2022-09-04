@@ -19,7 +19,7 @@ So if you had some block that defines colors, you should do this:
 ```
 > Note: `colors` is abritrary single-word tag name 
 
-Now let's add another block for changing wallpaper (I use `feh` for setting wallpaper, your may have another tool)
+Now let's add another block for changing wallpaper.
 ```diff
 + # THEMER:wallpaper
 + # THEMER_END:wallpaper
@@ -63,7 +63,7 @@ You can additionally check wether Themer recognizes blocks inside config file:
 $ themer files --check
 > Listed configuration files:
 >
-> multi (~/.config/i3/config) [Multiple blocks]:
+> i3 (~/.config/i3/config) [Multiple blocks]:
 >  ok colors
 >  ok wallpaper
 ```
