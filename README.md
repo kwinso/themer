@@ -1,4 +1,8 @@
-# Themer 
+<p align="center" style="text-align: center" >
+  <img src="./logo.png" /><br/>
+</p>
+
+# Themer
 Update all of your config files to match same theme with just one line in terminal.
 
 # Installation
