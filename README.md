@@ -18,6 +18,9 @@ Any other version can be installed with similar command by swapping `<release ta
 bash <(curl https://github.com/uwumouse/themer/releases/download/<release tag>/install.sh -L -s)
 ```
 
+# Examples
+You can go to [examples](./examples) directory to see some examples to follow.
+
 ## What Themer can do?
 - [X] Automatically set/swap color scheme variables (practically any variables) defined in your configuration file
 - [X] Custom format: define your own code to be injected when you swap a theme.
